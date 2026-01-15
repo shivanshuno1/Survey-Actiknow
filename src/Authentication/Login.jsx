@@ -140,30 +140,7 @@ function Login() {
       </div>
       
       {/* Debug info */}
-      <div style={{ 
-        marginTop: '30px', 
-        padding: '15px', 
-        backgroundColor: '#f8f9fa', 
-        borderRadius: '4px',
-        fontSize: '14px'
-      }}>
-        <h4>Debug Info:</h4>
-        <p>Backend: http://localhost:5000</p>
-        <p>Test with: shivanshu@gmail.com / 123456</p>
-        <button 
-          onClick={() => {
-            setEmail('shivanshu@gmail.com');
-            setPassword('123456');
-          }}
-          style={{ 
-            padding: '5px 10px', 
-            marginTop: '10px',
-            fontSize: '12px'
-          }}
-        >
-          Auto-fill Test Credentials
-        </button>
-      </div>
+     
     </div>
   );
 }
