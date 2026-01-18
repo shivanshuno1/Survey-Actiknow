@@ -39,37 +39,284 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
+  const [apiToken, setApiToken] = useState('');
 
   // Dashboard State
   const [activeSection, setActiveSection] = useState('surveys');
+  
+  // Surveys
   const [surveys, setSurveys] = useState([
-    { id: 1, name: 'Leadership Assessment', description: 'Evaluate leadership competencies' },
-    { id: 2, name: 'Technical Skills Review', description: 'Assess technical capabilities' },
-    { id: 3, name: '360 Degree Feedback', description: 'Comprehensive performance review' }
+    { 
+      id: 1, 
+      name: 'Leadership Assessment', 
+      description: 'Evaluate leadership competencies', 
+      assignedTo: [1, 2],
+      competencies: [1, 3]
+    },
+    { 
+      id: 2, 
+      name: 'Technical Skills Review', 
+      description: 'Assess technical capabilities', 
+      assignedTo: [2],
+      competencies: [2]
+    },
+    { 
+      id: 3, 
+      name: '360 Degree Feedback', 
+      description: 'Comprehensive performance review', 
+      assignedTo: [],
+      competencies: [1, 2, 3]
+    }
   ]);
+  const [newSurvey, setNewSurvey] = useState({ 
+    name: '', 
+    description: '' 
+  });
+  const [selectedCompetencies, setSelectedCompetencies] = useState([]);
 
+  // Competencies
   const [competencies, setCompetencies] = useState([
-    { id: 1, name: 'Communication', category: 'Behavioral', questionsCount: 8 },
-    { id: 2, name: 'JavaScript Proficiency', category: 'Technical', questionsCount: 12 },
-    { id: 3, name: 'Team Leadership', category: 'Leadership', questionsCount: 10 }
+    { 
+      id: 1, 
+      name: 'Communication Skills', 
+      category: 'Behavioral', 
+      questionsCount: 4,
+      description: 'Ability to convey information clearly and effectively'
+    },
+    { 
+      id: 2, 
+      name: 'JavaScript Proficiency', 
+      category: 'Technical', 
+      questionsCount: 5,
+      description: 'Proficiency in JavaScript programming language'
+    },
+    { 
+      id: 3, 
+      name: 'Team Leadership', 
+      category: 'Leadership', 
+      questionsCount: 6,
+      description: 'Ability to lead and motivate team members'
+    },
+    { 
+      id: 4, 
+      name: 'Problem Solving', 
+      category: 'Analytical', 
+      questionsCount: 4,
+      description: 'Ability to analyze complex issues and find effective solutions'
+    },
+    { 
+      id: 5, 
+      name: 'Time Management', 
+      category: 'Interpersonal', 
+      questionsCount: 3,
+      description: 'Ability to prioritize tasks and manage time efficiently'
+    }
   ]);
+  const [newCompetency, setNewCompetency] = useState({ 
+    name: '', 
+    category: 'Technical',
+    description: '' 
+  });
 
+  // Questions
   const [questions, setQuestions] = useState([
-    { id: 1, text: 'How effectively does the team communicate?', type: 'Rating Scale', competency: 'Communication' },
-    { id: 2, text: 'Rate proficiency in React.js', type: 'Multiple Choice', competency: 'JavaScript Proficiency' }
-  ]);
+    // Questions for Communication Skills (competencyId: 1)
+    { 
+      id: 1, 
+      text: 'How effectively does the candidate express ideas in written reports?', 
+      type: 'Rating Scale', 
+      competencyId: 1,
+      competencyName: 'Communication Skills'
+    },
+    { 
+      id: 2, 
+      text: 'Rate the candidate\'s ability to present complex information clearly to stakeholders.', 
+      type: 'Rating Scale', 
+      competencyId: 1,
+      competencyName: 'Communication Skills'
+    },
+    { 
+      id: 3, 
+      text: 'How well does the candidate listen and respond to feedback during discussions?', 
+      type: 'Multiple Choice', 
+      competencyId: 1,
+      competencyName: 'Communication Skills'
+    },
+    { 
+      id: 4, 
+      text: 'Describe an instance where the candidate demonstrated exceptional communication skills.', 
+      type: 'Text Response', 
+      competencyId: 1,
+      competencyName: 'Communication Skills'
+    },
 
-  const [availableUsers, setAvailableUsers] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', department: 'Engineering' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', department: 'Marketing' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' }
-  ]);
+    // Questions for JavaScript Proficiency (competencyId: 2)
+    { 
+      id: 5, 
+      text: 'How would you rate the candidate\'s knowledge of JavaScript ES6+ features?', 
+      type: 'Rating Scale', 
+      competencyId: 2,
+      competencyName: 'JavaScript Proficiency'
+    },
+    { 
+      id: 6, 
+      text: 'Can the candidate effectively debug and troubleshoot JavaScript errors?', 
+      type: 'Yes/No', 
+      competencyId: 2,
+      competencyName: 'JavaScript Proficiency'
+    },
+    { 
+      id: 7, 
+      text: 'Rate the candidate\'s proficiency with React.js or similar frontend frameworks.', 
+      type: 'Rating Scale', 
+      competencyId: 2,
+      competencyName: 'JavaScript Proficiency'
+    },
+    { 
+      id: 8, 
+      text: 'How experienced is the candidate with state management in modern JavaScript applications?', 
+      type: 'Multiple Choice', 
+      competencyId: 2,
+      competencyName: 'JavaScript Proficiency'
+    },
+    { 
+      id: 9, 
+      text: 'Describe the candidate\'s experience with testing JavaScript applications.', 
+      type: 'Text Response', 
+      competencyId: 2,
+      competencyName: 'JavaScript Proficiency'
+    },
 
+    // Questions for Team Leadership (competencyId: 3)
+    { 
+      id: 10, 
+      text: 'How effectively does the candidate delegate tasks and responsibilities to team members?', 
+      type: 'Rating Scale', 
+      competencyId: 3,
+      competencyName: 'Team Leadership'
+    },
+    { 
+      id: 11, 
+      text: 'Rate the candidate\'s ability to motivate team members during challenging projects.', 
+      type: 'Rating Scale', 
+      competencyId: 3,
+      competencyName: 'Team Leadership'
+    },
+    { 
+      id: 12, 
+      text: 'How well does the candidate handle conflicts between team members?', 
+      type: 'Multiple Choice', 
+      competencyId: 3,
+      competencyName: 'Team Leadership'
+    },
+    { 
+      id: 13, 
+      text: 'Does the candidate set clear goals and expectations for the team?', 
+      type: 'Yes/No', 
+      competencyId: 3,
+      competencyName: 'Team Leadership'
+    },
+    { 
+      id: 14, 
+      text: 'How effective is the candidate in mentoring junior team members?', 
+      type: 'Rating Scale', 
+      competencyId: 3,
+      competencyName: 'Team Leadership'
+    },
+    { 
+      id: 15, 
+      text: 'Describe the candidate\'s approach to team building and collaboration.', 
+      type: 'Text Response', 
+      competencyId: 3,
+      competencyName: 'Team Leadership'
+    },
+
+    // Questions for Problem Solving (competencyId: 4)
+    { 
+      id: 16, 
+      text: 'How effectively does the candidate analyze complex problems before proposing solutions?', 
+      type: 'Rating Scale', 
+      competencyId: 4,
+      competencyName: 'Problem Solving'
+    },
+    { 
+      id: 17, 
+      text: 'Rate the candidate\'s creativity in finding innovative solutions to challenges.', 
+      type: 'Rating Scale', 
+      competencyId: 4,
+      competencyName: 'Problem Solving'
+    },
+    { 
+      id: 18, 
+      text: 'How well does the candidate break down large problems into manageable parts?', 
+      type: 'Multiple Choice', 
+      competencyId: 4,
+      competencyName: 'Problem Solving'
+    },
+    { 
+      id: 19, 
+      text: 'Describe a challenging problem the candidate solved and their approach.', 
+      type: 'Text Response', 
+      competencyId: 4,
+      competencyName: 'Problem Solving'
+    },
+
+    // Questions for Time Management (competencyId: 5)
+    { 
+      id: 20, 
+      text: 'How effectively does the candidate prioritize tasks based on importance and urgency?', 
+      type: 'Rating Scale', 
+      competencyId: 5,
+      competencyName: 'Time Management'
+    },
+    { 
+      id: 21, 
+      text: 'Rate the candidate\'s ability to meet deadlines consistently.', 
+      type: 'Rating Scale', 
+      competencyId: 5,
+      competencyName: 'Time Management'
+    },
+    { 
+      id: 22, 
+      text: 'How well does the candidate manage multiple projects simultaneously?', 
+      type: 'Multiple Choice', 
+      competencyId: 5,
+      competencyName: 'Time Management'
+    }
+  ]);
+  const [newQuestion, setNewQuestion] = useState({ 
+    text: '', 
+    type: 'Multiple Choice', 
+    competencyId: '' 
+  });
+
+  // Users - Loaded from Database
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [newUser, setNewUser] = useState({ name: '', email: '', department: '' });
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [selectedSurveyForAssignment, setSelectedSurveyForAssignment] = useState('');
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userError, setUserError] = useState('');
+
+  // Assessments
   const [assessments, setAssessments] = useState([
-    { id: 1, name: 'Q1 Performance Review', user: 'John Doe', status: 'Completed' },
-    { id: 2, name: 'Leadership Assessment', user: 'Jane Smith', status: 'In Progress' },
-    { id: 3, name: 'Technical Evaluation', user: 'Bob Johnson', status: 'Pending' }
+    { id: 1, name: 'Q1 Performance Review', userId: 1, userName: 'John Doe', status: 'Completed', surveyId: 1 },
+    { id: 2, name: 'Leadership Assessment', userId: 2, userName: 'Jane Smith', status: 'In Progress', surveyId: 1 },
+    { id: 3, name: 'Technical Evaluation', userId: 3, userName: 'Bob Johnson', status: 'Pending', surveyId: 2 }
   ]);
+  const [newAssessment, setNewAssessment] = useState({ surveyId: '', userId: '' });
+
+  // Settings
+  const [settings, setSettings] = useState({
+    defaultDuration: 7,
+    notificationEmail: 'admin@example.com',
+    emailNotifications: true,
+    autoSave: true,
+    requireApproval: false
+  });
+
+  // API Base URL
+  const API_BASE_URL = 'http://localhost:5000/api';
 
   // Check if user is already logged in
   useEffect(() => {
@@ -79,8 +326,89 @@ function App() {
     if (token && storedUser) {
       setIsLoggedIn(true);
       setUserData(JSON.parse(storedUser));
+      setApiToken(token);
     }
   }, []);
+
+  // Load users from database when logged in
+  useEffect(() => {
+    if (isLoggedIn && apiToken) {
+      fetchUsersFromDatabase();
+    }
+  }, [isLoggedIn, apiToken]);
+
+  // Load initial data from localStorage
+  useEffect(() => {
+    if (isLoggedIn) {
+      const savedSurveys = localStorage.getItem('surveys');
+      const savedCompetencies = localStorage.getItem('competencies');
+      const savedQuestions = localStorage.getItem('questions');
+      const savedAssessments = localStorage.getItem('assessments');
+      const savedSettings = localStorage.getItem('settings');
+
+      if (savedSurveys) setSurveys(JSON.parse(savedSurveys));
+      if (savedCompetencies) setCompetencies(JSON.parse(savedCompetencies));
+      if (savedQuestions) setQuestions(JSON.parse(savedQuestions));
+      if (savedAssessments) setAssessments(JSON.parse(savedAssessments));
+      if (savedSettings) setSettings(JSON.parse(savedSettings));
+    }
+  }, [isLoggedIn]);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    if (isLoggedIn) {
+      localStorage.setItem('surveys', JSON.stringify(surveys));
+      localStorage.setItem('competencies', JSON.stringify(competencies));
+      localStorage.setItem('questions', JSON.stringify(questions));
+      localStorage.setItem('assessments', JSON.stringify(assessments));
+      localStorage.setItem('settings', JSON.stringify(settings));
+    }
+  }, [surveys, competencies, questions, assessments, settings, isLoggedIn]);
+
+  // Fetch users from database
+  const fetchUsersFromDatabase = async () => {
+    setLoadingUsers(true);
+    setUserError('');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setAvailableUsers(data.users || []);
+      } else {
+        setUserError(data.message || 'Failed to load users');
+        // Fallback to demo data if API fails
+        setAvailableUsers([
+          { _id: '1', name: 'John Doe', email: 'john@example.com', department: 'Engineering' },
+          { _id: '2', name: 'Jane Smith', email: 'jane@example.com', department: 'Marketing' },
+          { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' }
+        ]);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setUserError('Cannot connect to server. Using demo data.');
+      // Fallback to demo data
+      setAvailableUsers([
+        { _id: '1', name: 'John Doe', email: 'john@example.com', department: 'Engineering' },
+        { _id: '2', name: 'Jane Smith', email: 'jane@example.com', department: 'Marketing' },
+        { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' }
+      ]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -88,10 +416,7 @@ function App() {
     setError('');
 
     try {
-      console.log('Calling backend API for login...');
-      
-      // ✅ CALL YOUR BACKEND LOGIN ENDPOINT
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,18 +428,23 @@ function App() {
       });
 
       const data = await response.json();
-      console.log('Login response:', data);
 
       if (data.success) {
-        // ✅ Save to localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        const token = data.token;
+        const user = data.user;
         
-        // ✅ Update state
+        // Save to localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Update state
         setIsLoggedIn(true);
-        setUserData(data.user);
+        setUserData(user);
+        setApiToken(token);
+        setError('');
         
-        console.log('Login successful!');
+        // Fetch users from database after login
+        fetchUsersFromDatabase();
       } else {
         setError(data.message || 'Login failed');
       }
@@ -131,7 +461,6 @@ function App() {
     setLoading(true);
     setError('');
 
-    // Validation
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -145,10 +474,7 @@ function App() {
     }
 
     try {
-      console.log('Calling backend API for registration...');
-      
-      // ✅ CALL YOUR BACKEND REGISTER ENDPOINT
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,13 +487,10 @@ function App() {
       });
 
       const data = await response.json();
-      console.log('Register response:', data);
 
       if (data.success) {
         alert('Registration successful! You can now login.');
-        // Switch to login mode
         setIsRegisterMode(false);
-        // Clear form
         setName('');
         setEmail('');
         setPassword('');
@@ -188,8 +511,260 @@ function App() {
     localStorage.removeItem('user');
     setIsLoggedIn(false);
     setUserData(null);
+    setApiToken('');
     setEmail('');
     setPassword('');
+    setAvailableUsers([]);
+  };
+
+  // Add new user to database
+  const handleCreateUser = async () => {
+    if (!newUser.name.trim() || !newUser.email.trim()) {
+      alert('Please enter name and email');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newUser)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh users list from database
+        fetchUsersFromDatabase();
+        setNewUser({ name: '', email: '', department: '' });
+        alert('User added successfully!');
+      } else {
+        alert(data.message || 'Failed to add user');
+      }
+    } catch (err) {
+      console.error('Error creating user:', err);
+      alert('Cannot connect to server. User not saved.');
+    }
+  };
+
+  // Survey Functions
+  const handleCreateSurvey = () => {
+    if (!newSurvey.name.trim()) {
+      alert('Please enter survey name');
+      return;
+    }
+
+    if (selectedCompetencies.length === 0) {
+      alert('Please select at least one competency');
+      return;
+    }
+
+    const newSurveyObj = {
+      id: surveys.length + 1,
+      name: newSurvey.name,
+      description: newSurvey.description,
+      assignedTo: [],
+      competencies: selectedCompetencies
+    };
+
+    setSurveys([...surveys, newSurveyObj]);
+    setNewSurvey({ name: '', description: '' });
+    setSelectedCompetencies([]);
+    alert('Survey created successfully!');
+  };
+
+  const handleDeleteSurvey = (id) => {
+    if (window.confirm('Are you sure you want to delete this survey?')) {
+      setSurveys(surveys.filter(survey => survey.id !== id));
+      setAssessments(assessments.filter(assessment => assessment.surveyId !== id));
+    }
+  };
+
+  // Competency Functions
+  const handleCreateCompetency = () => {
+    if (!newCompetency.name.trim()) {
+      alert('Please enter competency name');
+      return;
+    }
+
+    const newCompetencyObj = {
+      id: competencies.length + 1,
+      name: newCompetency.name,
+      category: newCompetency.category,
+      description: newCompetency.description,
+      questionsCount: 0
+    };
+
+    setCompetencies([...competencies, newCompetencyObj]);
+    setNewCompetency({ name: '', category: 'Technical', description: '' });
+    alert('Competency created successfully!');
+  };
+
+  const handleDeleteCompetency = (id) => {
+    if (window.confirm('Are you sure you want to delete this competency?')) {
+      setCompetencies(competencies.filter(comp => comp.id !== id));
+      // Also remove questions for this competency
+      setQuestions(questions.filter(q => q.competencyId !== id));
+      // Remove from surveys that include this competency
+      setSurveys(surveys.map(survey => ({
+        ...survey,
+        competencies: survey.competencies.filter(compId => compId !== id)
+      })));
+    }
+  };
+
+  // Question Functions
+  const handleCreateQuestion = () => {
+    if (!newQuestion.text.trim()) {
+      alert('Please enter question text');
+      return;
+    }
+
+    if (!newQuestion.competencyId) {
+      alert('Please select a competency');
+      return;
+    }
+
+    const competency = competencies.find(c => c.id === parseInt(newQuestion.competencyId));
+    
+    const newQuestionObj = {
+      id: questions.length + 1,
+      text: newQuestion.text,
+      type: newQuestion.type,
+      competencyId: competency.id,
+      competencyName: competency.name
+    };
+
+    setQuestions([...questions, newQuestionObj]);
+    
+    // Update question count for competency
+    setCompetencies(competencies.map(comp => 
+      comp.id === parseInt(newQuestion.competencyId) 
+        ? { ...comp, questionsCount: comp.questionsCount + 1 }
+        : comp
+    ));
+
+    setNewQuestion({ text: '', type: 'Multiple Choice', competencyId: '' });
+    alert('Question added successfully!');
+  };
+
+  const handleDeleteQuestion = (id) => {
+    if (window.confirm('Are you sure you want to delete this question?')) {
+      const questionToDelete = questions.find(q => q.id === id);
+      setQuestions(questions.filter(q => q.id !== id));
+      
+      // Update question count for competency
+      if (questionToDelete) {
+        setCompetencies(competencies.map(comp => 
+          comp.id === questionToDelete.competencyId && comp.questionsCount > 0
+            ? { ...comp, questionsCount: comp.questionsCount - 1 }
+            : comp
+        ));
+      }
+    }
+  };
+
+  const handleUserSelection = (userId) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleAssignUsersToSurvey = () => {
+    if (!selectedSurveyForAssignment) {
+      alert('Please select a survey first');
+      return;
+    }
+
+    if (selectedUserIds.length === 0) {
+      alert('Please select at least one user');
+      return;
+    }
+
+    setSurveys(surveys.map(survey => 
+      survey.id === parseInt(selectedSurveyForAssignment)
+        ? { ...survey, assignedTo: [...new Set([...survey.assignedTo, ...selectedUserIds])] }
+        : survey
+    ));
+
+    // Create assessments for assigned users
+    const survey = surveys.find(s => s.id === parseInt(selectedSurveyForAssignment));
+    selectedUserIds.forEach(userId => {
+      const user = availableUsers.find(u => u._id === userId);
+      const existingAssessment = assessments.find(a => 
+        a.userId === userId && a.surveyId === parseInt(selectedSurveyForAssignment)
+      );
+
+      if (!existingAssessment && user) {
+        const newAssessmentObj = {
+          id: assessments.length + 1,
+          name: `${survey.name} - ${user.name}`,
+          userId: userId,
+          userName: user.name,
+          status: 'Pending',
+          surveyId: survey.id
+        };
+        setAssessments([...assessments, newAssessmentObj]);
+      }
+    });
+
+    setSelectedUserIds([]);
+    alert('Users assigned successfully!');
+  };
+
+  // Assessment Functions
+  const handleCreateAssessment = () => {
+    if (!newAssessment.surveyId || !newAssessment.userId) {
+      alert('Please select both survey and user');
+      return;
+    }
+
+    const survey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
+    const user = availableUsers.find(u => u._id === newAssessment.userId);
+
+    if (!survey || !user) {
+      alert('Invalid survey or user selection');
+      return;
+    }
+
+    const newAssessmentObj = {
+      id: assessments.length + 1,
+      name: `${survey.name} - ${user.name}`,
+      userId: user._id,
+      userName: user.name,
+      status: 'Pending',
+      surveyId: survey.id
+    };
+
+    setAssessments([...assessments, newAssessmentObj]);
+    setNewAssessment({ surveyId: '', userId: '' });
+    
+    // Update survey's assigned users
+    setSurveys(surveys.map(s => 
+      s.id === survey.id 
+        ? { ...s, assignedTo: [...new Set([...s.assignedTo, user._id])] }
+        : s
+    ));
+
+    alert('Assessment created successfully!');
+  };
+
+  const handleUpdateAssessmentStatus = (assessmentId, newStatus) => {
+    setAssessments(assessments.map(assessment => 
+      assessment.id === assessmentId 
+        ? { ...assessment, status: newStatus }
+        : assessment
+    ));
+  };
+
+  // Settings Functions
+  const handleSaveSettings = () => {
+    alert('Settings saved successfully!');
   };
 
   // LOGIN/REGISTER PAGE
@@ -390,7 +965,6 @@ function App() {
               </div>
             )}
             
-            {/* Single submit button - changes based on mode */}
             <button
               type="submit"
               disabled={loading}
@@ -406,12 +980,6 @@ function App() {
                 cursor: loading ? 'not-allowed' : 'pointer',
                 transition: 'background-color 0.3s'
               }}
-              onMouseOver={(e) => !loading && (
-                e.target.style.backgroundColor = isRegisterMode ? '#38a169' : '#5a67d8'
-              )}
-              onMouseOut={(e) => !loading && (
-                e.target.style.backgroundColor = isRegisterMode ? '#48bb78' : '#667eea'
-              )}
             >
               {loading ? (
                 <>
@@ -444,10 +1012,7 @@ function App() {
               <p>
                 Already have an account?{' '}
                 <button 
-                  onClick={() => {
-                    setIsRegisterMode(false);
-                    setError('');
-                  }}
+                  onClick={() => setIsRegisterMode(false)}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -465,10 +1030,7 @@ function App() {
               <p>
                 Don't have an account?{' '}
                 <button 
-                  onClick={() => {
-                    setIsRegisterMode(true);
-                    setError('');
-                  }}
+                  onClick={() => setIsRegisterMode(true)}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -484,730 +1046,1458 @@ function App() {
               </p>
             )}
             
-            {!isRegisterMode && (
-              <div style={{ 
-                marginTop: '15px', 
-                padding: '10px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '6px',
-                fontSize: '12px'
-              }}>
-                <p><strong>For testing:</strong></p>
-                <p>Backend: http://localhost:5000</p>
-                <p>Make sure MongoDB is running</p>
-              </div>
-            )}
+            <div style={{ 
+              marginTop: '15px', 
+              padding: '10px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '6px',
+              fontSize: '12px'
+            }}>
+              <p><strong>Backend Requirements:</strong></p>
+              <p>Make sure backend is running on http://localhost:5000</p>
+              <p>Backend should have:</p>
+              <ul style={{ textAlign: 'left', margin: '5px 0', paddingLeft: '20px' }}>
+                <li>POST /api/auth/login</li>
+                <li>POST /api/auth/register</li>
+                <li>GET /api/users (protected)</li>
+                <li>POST /api/users (protected)</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // DASHBOARD PAGE (after login) - Keep your existing dashboard code
-// DASHBOARD PAGE (after login)
-return (
-  <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa', display: 'flex' }}>
-    {/* Sidebar Navigation */}
-    <div style={{
-      width: '250px',
-      backgroundColor: 'white',
-      boxShadow: '2px 0 10px rgba(0,0,0,0.1)',
-      padding: '20px 0',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
-      <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #eee' }}>
-        <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Admin Dashboard</h3>
-        {userData && (
-          <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>
-            {userData.name} ({userData.role || 'Admin'})
-          </p>
-        )}
-      </div>
-
-      <div style={{ flex: 1, padding: '20px 0' }}>
-        <SidebarItem 
-          icon="📊" 
-          label="Surveys" 
-          active={activeSection === 'surveys'}
-          onClick={() => setActiveSection('surveys')}
-        />
-        <SidebarItem 
-          icon="🎯" 
-          label="Competencies" 
-          active={activeSection === 'competencies'}
-          onClick={() => setActiveSection('competencies')}
-        />
-        <SidebarItem 
-          icon="❓" 
-          label="Questions" 
-          active={activeSection === 'questions'}
-          onClick={() => setActiveSection('questions')}
-        />
-        <SidebarItem 
-          icon="👥" 
-          label="Users" 
-          active={activeSection === 'users'}
-          onClick={() => setActiveSection('users')}
-        />
-        <SidebarItem 
-          icon="📝" 
-          label="Assessment" 
-          active={activeSection === 'assessment'}
-          onClick={() => setActiveSection('assessment')}
-        />
-        <SidebarItem 
-          icon="⚙️" 
-          label="Settings" 
-          active={activeSection === 'settings'}
-          onClick={() => setActiveSection('settings')}
-        />
-      </div>
-
-      <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
-        <button
-          onClick={handleLogout}
-          style={{
-            width: '100%',
-            padding: '10px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}
-        >
-          <span>🚪</span> Logout
-        </button>
-      </div>
-    </div>
-
-    {/* Main Content Area */}
-    <div style={{ flex: 1 }}>
-      {/* Top Navigation */}
-      <nav style={{
+  // DASHBOARD PAGE (after login)
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa', display: 'flex' }}>
+      {/* Sidebar Navigation */}
+      <div style={{
+        width: '250px',
         backgroundColor: 'white',
-        padding: '20px 40px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        boxShadow: '2px 0 10px rgba(0,0,0,0.1)',
+        padding: '20px 0',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        flexDirection: 'column'
       }}>
-        <div>
-          <h1 style={{ 
-            margin: 0, 
-            color: '#333',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            fontSize: '24px'
-          }}>
-            {activeSection === 'surveys' && 'Survey Management'}
-            {activeSection === 'competencies' && 'Competency Management'}
-            {activeSection === 'questions' && 'Question Bank'}
-            {activeSection === 'users' && 'User Management'}
-            {activeSection === 'assessment' && 'Assessment Section'}
-            {activeSection === 'settings' && 'Settings'}
-          </h1>
-          <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-            {activeSection === 'surveys' && 'Create and manage different surveys'}
-            {activeSection === 'competencies' && 'Define and organize competencies'}
-            {activeSection === 'questions' && 'Manage questions for each competency'}
-            {activeSection === 'users' && 'Select users for surveys'}
-            {activeSection === 'assessment' && 'Conduct and view assessments'}
-            {activeSection === 'settings' && 'Configure system settings'}
-          </p>
+        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #eee' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Admin Dashboard</h3>
+          {userData && (
+            <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>
+              {userData.name} ({userData.role || 'Admin'})
+            </p>
+          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ color: '#666' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-        </div>
-      </nav>
 
-      {/* Dynamic Content Based on Selection */}
-      <main style={{ 
-        padding: '30px' 
-      }}>
-        {activeSection === 'surveys' && (
+        <div style={{ flex: 1, padding: '20px 0' }}>
+          <SidebarItem 
+            icon="📊" 
+            label="Surveys" 
+            active={activeSection === 'surveys'}
+            onClick={() => setActiveSection('surveys')}
+          />
+          <SidebarItem 
+            icon="🎯" 
+            label="Competencies" 
+            active={activeSection === 'competencies'}
+            onClick={() => setActiveSection('competencies')}
+          />
+          <SidebarItem 
+            icon="❓" 
+            label="Questions" 
+            active={activeSection === 'questions'}
+            onClick={() => setActiveSection('questions')}
+          />
+          <SidebarItem 
+            icon="👥" 
+            label="Users" 
+            active={activeSection === 'users'}
+            onClick={() => setActiveSection('users')}
+          />
+          <SidebarItem 
+            icon="📝" 
+            label="Assessment" 
+            active={activeSection === 'assessment'}
+            onClick={() => setActiveSection('assessment')}
+          />
+          <SidebarItem 
+            icon="⚙️" 
+            label="Settings" 
+            active={activeSection === 'settings'}
+            onClick={() => setActiveSection('settings')}
+          />
+        </div>
+
+        <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              width: '100%',
+              padding: '10px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            <span>🚪</span> Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div style={{ flex: 1 }}>
+        {/* Top Navigation */}
+        <nav style={{
+          backgroundColor: 'white',
+          padding: '20px 40px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-              <h2 style={{ margin: 0, color: '#333' }}>Available Surveys</h2>
-              <button style={{
-                padding: '10px 20px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600'
+            <h1 style={{ 
+              margin: 0, 
+              color: '#333',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: '24px'
+            }}>
+              {activeSection === 'surveys' && 'Survey Management'}
+              {activeSection === 'competencies' && 'Competency Management'}
+              {activeSection === 'questions' && 'Question Bank'}
+              {activeSection === 'users' && 'User Management'}
+              {activeSection === 'assessment' && 'Assessment Section'}
+              {activeSection === 'settings' && 'Settings'}
+            </h1>
+            <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+              {activeSection === 'surveys' && 'Create and manage different surveys'}
+              {activeSection === 'competencies' && 'Define and organize competencies'}
+              {activeSection === 'questions' && 'Manage questions for each competency'}
+              {activeSection === 'users' && 'Select users for surveys'}
+              {activeSection === 'assessment' && 'Conduct and view assessments'}
+              {activeSection === 'settings' && 'Configure system settings'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span style={{ color: '#666' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          </div>
+        </nav>
+
+        {/* Dynamic Content Based on Selection */}
+        <main style={{ padding: '30px' }}>
+          {activeSection === 'surveys' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h2 style={{ margin: 0, color: '#333' }}>Available Surveys</h2>
+                <div>
+                  <button 
+                    onClick={handleCreateSurvey}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    + Create New Survey
+                  </button>
+                </div>
+              </div>
+
+              {/* Create Survey Form */}
+              <div style={{ 
+                backgroundColor: 'white', 
+                padding: '20px', 
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                marginBottom: '20px'
               }}>
-                + Create New Survey
-              </button>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-              {surveys.map(survey => (
-                <div key={survey.id} style={{
-                  backgroundColor: 'white',
-                  padding: '20px',
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>{survey.name}</h3>
-                  <p style={{ color: '#666' }}>{survey.description}</p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <button style={{
-                      padding: '8px 15px',
-                      backgroundColor: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}>
-                      Edit
-                    </button>
-                    <button style={{
-                      padding: '8px 15px',
-                      backgroundColor: '#ffc107',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}>
-                      Assign
-                    </button>
+                <h3 style={{ marginTop: 0 }}>Create New Survey</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Survey Name</label>
+                    <input
+                      type="text"
+                      value={newSurvey.name}
+                      onChange={(e) => setNewSurvey({...newSurvey, name: e.target.value})}
+                      placeholder="Enter survey name"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Description</label>
+                    <input
+                      type="text"
+                      value={newSurvey.description}
+                      onChange={(e) => setNewSurvey({...newSurvey, description: e.target.value})}
+                      placeholder="Enter description"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
+                      }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeSection === 'competencies' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-              <h2 style={{ margin: 0, color: '#333' }}>Competencies</h2>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <select style={{
-                  padding: '10px',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px'
-                }}>
-                  <option>Select Category</option>
-                  <option>Technical</option>
-                  <option>Behavioral</option>
-                  <option>Leadership</option>
-                </select>
-                <button style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: '600'
-                }}>
-                  + Add Competency
+                
+                {/* Competency Selection for Survey */}
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                    Select Competencies to Include:
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {competencies.map(comp => (
+                      <label key={comp.id} style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '5px',
+                        padding: '8px 12px',
+                        backgroundColor: selectedCompetencies.includes(comp.id) ? '#e3f2fd' : '#f8f9fa',
+                        borderRadius: '6px',
+                        border: '1px solid #ddd',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCompetencies.includes(comp.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCompetencies([...selectedCompetencies, comp.id]);
+                            } else {
+                              setSelectedCompetencies(selectedCompetencies.filter(id => id !== comp.id));
+                            }
+                          }}
+                          style={{ marginRight: '5px' }}
+                        />
+                        <span>
+                          {comp.name} 
+                          <span style={{ 
+                            marginLeft: '5px', 
+                            fontSize: '12px', 
+                            color: '#666',
+                            backgroundColor: comp.category === 'Technical' ? '#e3f2fd' : 
+                                           comp.category === 'Behavioral' ? '#f3e5f5' : 
+                                           comp.category === 'Leadership' ? '#e8f5e8' :
+                                           comp.category === 'Analytical' ? '#fff3cd' : '#f8d7da',
+                            padding: '2px 6px',
+                            borderRadius: '10px'
+                          }}>
+                            {comp.category}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={handleCreateSurvey}
+                  disabled={!newSurvey.name.trim() || selectedCompetencies.length === 0}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: !newSurvey.name.trim() || selectedCompetencies.length === 0 ? '#ccc' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: !newSurvey.name.trim() || selectedCompetencies.length === 0 ? 'not-allowed' : 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Create Survey
                 </button>
               </div>
-            </div>
-
-            <div style={{ backgroundColor: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead style={{ backgroundColor: '#f8f9fa' }}>
-                  <tr>
-                    <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Competency</th>
-                    <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Category</th>
-                    <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Questions</th>
-                    <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {competencies.map(comp => (
-                    <tr key={comp.id} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '15px' }}>{comp.name}</td>
-                      <td style={{ padding: '15px' }}>
-                        <span style={{
-                          padding: '5px 10px',
-                          backgroundColor: comp.category === 'Technical' ? '#e3f2fd' : 
-                                         comp.category === 'Behavioral' ? '#f3e5f5' : '#e8f5e8',
-                          borderRadius: '20px',
-                          fontSize: '12px'
-                        }}>
-                          {comp.category}
-                        </span>
-                      </td>
-                      <td style={{ padding: '15px' }}>{comp.questionsCount}</td>
-                      <td style={{ padding: '15px' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                {surveys.map(survey => {
+                  // Get competencies for this survey
+                  const surveyCompetencies = competencies.filter(comp => 
+                    survey.competencies.includes(comp.id)
+                  );
+                  
+                  return (
+                    <div key={survey.id} style={{
+                      backgroundColor: 'white',
+                      padding: '20px',
+                      borderRadius: '10px',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                    }}>
+                      <h3 style={{ marginTop: 0 }}>{survey.name}</h3>
+                      <p style={{ color: '#666' }}>{survey.description}</p>
+                      
+                      {/* Display competencies for this survey */}
+                      <div style={{ margin: '10px 0' }}>
+                        <strong style={{ fontSize: '14px' }}>Competencies Assessed:</strong>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px' }}>
+                          {surveyCompetencies.map(comp => (
+                            <span key={comp.id} style={{
+                              padding: '3px 8px',
+                              backgroundColor: comp.category === 'Technical' ? '#e3f2fd' : 
+                                             comp.category === 'Behavioral' ? '#f3e5f5' : 
+                                             comp.category === 'Leadership' ? '#e8f5e8' :
+                                             comp.category === 'Analytical' ? '#fff3cd' : '#f8d7da',
+                              borderRadius: '12px',
+                              fontSize: '12px'
+                            }}>
+                              {comp.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <p style={{ fontSize: '14px', color: '#888' }}>
+                        Questions: {surveyCompetencies.reduce((total, comp) => total + comp.questionsCount, 0)} total
+                      </p>
+                      <p style={{ fontSize: '14px', color: '#888' }}>
+                        Assigned to: {survey.assignedTo.length} user(s)
+                      </p>
+                      
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                         <button style={{
-                          padding: '5px 10px',
-                          backgroundColor: '#17a2b8',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          marginRight: '5px'
-                        }}>
-                          View Questions
-                        </button>
-                        <button style={{
-                          padding: '5px 10px',
-                          backgroundColor: '#dc3545',
+                          padding: '8px 15px',
+                          backgroundColor: '#28a745',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           cursor: 'pointer'
                         }}>
+                          Edit
+                        </button>
+                        <button style={{
+                          padding: '8px 15px',
+                          backgroundColor: '#ffc107',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          setActiveSection('users');
+                          setSelectedSurveyForAssignment(survey.id);
+                        }}
+                        >
+                          Assign Users
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteSurvey(survey.id)}
+                          style={{
+                            padding: '8px 15px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
                           Delete
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeSection === 'questions' && (
-          <div>
-            <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Question Bank</h2>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  padding: '20px', 
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                  marginBottom: '20px'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>Add New Question</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <select style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}>
-                      <option>Select Competency</option>
-                      {competencies.map(comp => (
-                        <option key={comp.id} value={comp.id}>{comp.name}</option>
-                      ))}
-                    </select>
-                    <textarea 
-                      placeholder="Enter question text..."
-                      style={{ 
-                        padding: '10px', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '6px',
-                        minHeight: '100px',
-                        resize: 'vertical'
+          {activeSection === 'competencies' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h2 style={{ margin: 0, color: '#333' }}>Competencies</h2>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={handleCreateCompetency}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    + Add Competency
+                  </button>
+                </div>
+              </div>
+
+              {/* Create Competency Form */}
+              <div style={{ 
+                backgroundColor: 'white', 
+                padding: '20px', 
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                marginBottom: '20px'
+              }}>
+                <h3 style={{ marginTop: 0 }}>Add New Competency</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Competency Name</label>
+                    <input
+                      type="text"
+                      value={newCompetency.name}
+                      onChange={(e) => setNewCompetency({...newCompetency, name: e.target.value})}
+                      placeholder="Enter competency name"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
                       }}
                     />
-                    <select style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}>
-                      <option>Question Type</option>
-                      <option>Multiple Choice</option>
-                      <option>Rating Scale</option>
-                      <option>Text Response</option>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Category</label>
+                    <select 
+                      value={newCompetency.category}
+                      onChange={(e) => setNewCompetency({...newCompetency, category: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      <option value="Technical">Technical</option>
+                      <option value="Behavioral">Behavioral</option>
+                      <option value="Leadership">Leadership</option>
+                      <option value="Analytical">Analytical</option>
+                      <option value="Interpersonal">Interpersonal</option>
                     </select>
-                    <button style={{
+                  </div>
+                </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Description</label>
+                  <textarea
+                    value={newCompetency.description}
+                    onChange={(e) => setNewCompetency({...newCompetency, description: e.target.value})}
+                    placeholder="Describe what this competency assesses"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      minHeight: '80px',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+                
+                <button 
+                  onClick={handleCreateCompetency}
+                  disabled={!newCompetency.name.trim()}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: !newCompetency.name.trim() ? '#ccc' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: !newCompetency.name.trim() ? 'not-allowed' : 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Add Competency
+                </button>
+              </div>
+
+              <div style={{ backgroundColor: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead style={{ backgroundColor: '#f8f9fa' }}>
+                    <tr>
+                      <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Competency</th>
+                      <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Category</th>
+                      <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Questions</th>
+                      <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #eee' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competencies.map(comp => {
+                      // Get questions for this specific competency
+                      const competencyQuestions = questions.filter(q => q.competencyId === comp.id);
+                      
+                      return (
+                        <tr key={comp.id} style={{ borderBottom: '1px solid #eee' }}>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ fontWeight: '600' }}>{comp.name}</div>
+                            {comp.description && (
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                {comp.description}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <span style={{
+                              padding: '5px 10px',
+                              backgroundColor: 
+                                comp.category === 'Technical' ? '#e3f2fd' : 
+                                comp.category === 'Behavioral' ? '#f3e5f5' : 
+                                comp.category === 'Leadership' ? '#e8f5e8' :
+                                comp.category === 'Analytical' ? '#fff3cd' : '#f8d7da',
+                              color: 
+                                comp.category === 'Analytical' ? '#856404' : 
+                                comp.category === 'Interpersonal' ? '#721c24' : 'inherit',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: '500'
+                            }}>
+                              {comp.category}
+                            </span>
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div>{comp.questionsCount} questions</div>
+                            {competencyQuestions.length > 0 && (
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                Sample: {competencyQuestions[0].text.substring(0, 50)}...
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              <button style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#17a2b8',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                width: '100%'
+                              }}
+                              onClick={() => {
+                                setActiveSection('questions');
+                                setNewQuestion({...newQuestion, competencyId: comp.id.toString()});
+                              }}
+                              >
+                                📋 View Questions ({comp.questionsCount})
+                              </button>
+                              
+                              <button style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#28a745',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                width: '100%'
+                              }}
+                              onClick={() => {
+                                setActiveSection('questions');
+                                setNewQuestion({
+                                  text: '',
+                                  type: 'Multiple Choice',
+                                  competencyId: comp.id.toString()
+                                });
+                              }}
+                              >
+                                ➕ Add Question
+                              </button>
+                              
+                              <button 
+                                onClick={() => handleDeleteCompetency(comp.id)}
+                                style={{
+                                  padding: '5px 10px',
+                                  backgroundColor: '#dc3545',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  width: '100%'
+                                }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Show competencies with their questions in detail */}
+              <div style={{ 
+                marginTop: '30px',
+                backgroundColor: 'white',
+                padding: '20px',
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+              }}>
+                <h3 style={{ marginTop: 0, color: '#333', marginBottom: '20px' }}>
+                  Competency Questions Overview
+                </h3>
+                
+                {competencies.map(comp => {
+                  const competencyQuestions = questions.filter(q => q.competencyId === comp.id);
+                  
+                  return competencyQuestions.length > 0 ? (
+                    <div key={comp.id} style={{ marginBottom: '25px', paddingBottom: '20px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <div>
+                          <h4 style={{ margin: 0, color: '#333' }}>{comp.name}</h4>
+                          <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
+                            {comp.description || 'No description provided'}
+                          </div>
+                        </div>
+                        <span style={{
+                          padding: '5px 15px',
+                          backgroundColor: 
+                            comp.category === 'Technical' ? '#e3f2fd' : 
+                            comp.category === 'Behavioral' ? '#f3e5f5' : 
+                            comp.category === 'Leadership' ? '#e8f5e8' :
+                            comp.category === 'Analytical' ? '#fff3cd' : '#f8d7da',
+                          color: 
+                            comp.category === 'Analytical' ? '#856404' : 
+                            comp.category === 'Interpersonal' ? '#721c24' : 'inherit',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '500'
+                        }}>
+                          {comp.category} • {competencyQuestions.length} questions
+                        </span>
+                      </div>
+                      
+                      <div style={{ 
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '8px',
+                        padding: '15px'
+                      }}>
+                        {competencyQuestions.map((q, index) => (
+                          <div key={q.id} style={{ 
+                            padding: '10px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px',
+                            marginBottom: '10px',
+                            borderLeft: '4px solid #007bff'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: '500', marginBottom: '5px' }}>
+                                  Q{index + 1}: {q.text}
+                                </div>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  fontSize: '12px',
+                                  color: '#666'
+                                }}>
+                                  <span style={{ 
+                                    padding: '2px 8px',
+                                    backgroundColor: '#e9ecef',
+                                    borderRadius: '10px'
+                                  }}>
+                                    {q.type}
+                                  </span>
+                                  <span>Question ID: {q.id}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <button 
+                                  onClick={() => handleDeleteQuestion(q.id)}
+                                  style={{
+                                    padding: '5px 10px',
+                                    backgroundColor: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px'
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })}
+                
+                {/* If no questions exist yet */}
+                {questions.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    <p>No questions have been added to any competencies yet.</p>
+                    <p>Click "Add Question" on a competency to get started.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'questions' && (
+            <div>
+              <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Question Bank</h2>
+              
+              {/* Competency Filter */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                  Filter by Competency:
+                </label>
+                <select 
+                  value={newQuestion.competencyId}
+                  onChange={(e) => setNewQuestion({...newQuestion, competencyId: e.target.value})}
+                  style={{
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    width: '300px'
+                  }}
+                >
+                  <option value="">All Competencies</option>
+                  {competencies.map(comp => (
+                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.category})</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    padding: '20px', 
+                    borderRadius: '10px',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                    marginBottom: '20px'
+                  }}>
+                    <h3 style={{ marginTop: 0 }}>Add New Question</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      <select 
+                        value={newQuestion.competencyId}
+                        onChange={(e) => setNewQuestion({...newQuestion, competencyId: e.target.value})}
+                        style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}
+                      >
+                        <option value="">Select Competency</option>
+                        {competencies.map(comp => (
+                          <option key={comp.id} value={comp.id}>
+                            {comp.name} ({comp.category})
+                          </option>
+                        ))}
+                      </select>
+                      
+                      <textarea 
+                        placeholder="Enter question text..."
+                        value={newQuestion.text}
+                        onChange={(e) => setNewQuestion({...newQuestion, text: e.target.value})}
+                        style={{ 
+                          padding: '10px', 
+                          border: '1px solid #ddd', 
+                          borderRadius: '6px',
+                          minHeight: '100px',
+                          resize: 'vertical'
+                        }}
+                      />
+                      
+                      <select 
+                        value={newQuestion.type}
+                        onChange={(e) => setNewQuestion({...newQuestion, type: e.target.value})}
+                        style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}
+                      >
+                        <option value="Multiple Choice">Multiple Choice</option>
+                        <option value="Rating Scale">Rating Scale</option>
+                        <option value="Yes/No">Yes/No</option>
+                        <option value="Text Response">Text Response</option>
+                      </select>
+                      
+                      <button 
+                        onClick={handleCreateQuestion}
+                        disabled={!newQuestion.text.trim() || !newQuestion.competencyId}
+                        style={{
+                          padding: '10px 20px',
+                          backgroundColor: !newQuestion.text.trim() || !newQuestion.competencyId ? '#ccc' : '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: !newQuestion.text.trim() || !newQuestion.competencyId ? 'not-allowed' : 'pointer',
+                          fontWeight: '600',
+                          alignSelf: 'flex-start'
+                        }}
+                      >
+                        Add Question
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ flex: 2 }}>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    padding: '20px', 
+                    borderRadius: '10px',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                  }}>
+                    <h3 style={{ marginTop: 0 }}>Questions by Competency</h3>
+                    
+                    {/* Group questions by competency */}
+                    {competencies
+                      .filter(comp => !newQuestion.competencyId || comp.id === parseInt(newQuestion.competencyId))
+                      .map(comp => {
+                        const compQuestions = questions.filter(q => q.competencyId === comp.id);
+                        
+                        return compQuestions.length > 0 ? (
+                          <div key={comp.id} style={{ marginBottom: '20px' }}>
+                            <h4 style={{ 
+                              margin: '0 0 10px 0', 
+                              paddingBottom: '5px',
+                              borderBottom: '2px solid #eee',
+                              color: '#333'
+                            }}>
+                              {comp.name} ({comp.category})
+                              <span style={{ 
+                                marginLeft: '10px',
+                                fontSize: '14px',
+                                color: '#666',
+                                fontWeight: 'normal'
+                              }}>
+                                {compQuestions.length} questions
+                              </span>
+                            </h4>
+                            
+                            {compQuestions.map((q, index) => (
+                              <div key={q.id} style={{ 
+                                padding: '10px 15px', 
+                                borderBottom: '1px solid #eee',
+                                backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white',
+                                marginLeft: '10px'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div>
+                                    <strong>{q.text}</strong>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      gap: '10px',
+                                      marginTop: '5px',
+                                      fontSize: '14px',
+                                      color: '#666'
+                                    }}>
+                                      <span style={{ 
+                                        padding: '2px 6px',
+                                        backgroundColor: '#eee',
+                                        borderRadius: '10px',
+                                        fontSize: '12px'
+                                      }}>
+                                        {q.type}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <button 
+                                      onClick={() => handleDeleteQuestion(q.id)}
+                                      style={{
+                                        padding: '5px 10px',
+                                        backgroundColor: '#dc3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '12px'
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null;
+                      })}
+                    
+                    {/* Show message if no questions found */}
+                    {questions.filter(q => !newQuestion.competencyId || q.competencyId === parseInt(newQuestion.competencyId)).length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                        <p>No questions found for this competency.</p>
+                        <p>Add questions using the form on the left.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'users' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h2 style={{ margin: 0, color: '#333' }}>Available Users for Survey</h2>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => fetchUsersFromDatabase()}
+                    disabled={loadingUsers}
+                    style={{
                       padding: '10px 20px',
-                      backgroundColor: '#28a745',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: loadingUsers ? 'not-allowed' : 'pointer',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span>🔄</span> Refresh Users
+                  </button>
+                  <button 
+                    onClick={handleCreateUser}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#007bff',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      alignSelf: 'flex-start'
-                    }}>
-                      Add Question
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div style={{ flex: 2 }}>
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  padding: '20px', 
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                }}>
-                  <h3 style={{ marginTop: 0 }}>Existing Questions</h3>
-                  {questions.map((q, index) => (
-                    <div key={q.id} style={{ 
-                      padding: '15px', 
-                      borderBottom: '1px solid #eee',
-                      backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <strong>{q.text}</strong>
-                        <span style={{ 
-                          padding: '3px 8px',
-                          backgroundColor: '#eee',
-                          borderRadius: '10px',
-                          fontSize: '12px'
-                        }}>
-                          {q.type}
-                        </span>
-                      </div>
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        marginTop: '10px',
-                        fontSize: '14px',
-                        color: '#666'
-                      }}>
-                        <span>Competency: {q.competency}</span>
-                        <div>
-                          <button style={{
-                            padding: '5px 10px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            marginRight: '5px',
-                            fontSize: '12px'
-                          }}>
-                            Edit
-                          </button>
-                          <button style={{
-                            padding: '5px 10px',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px'
-                          }}>
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeSection === 'users' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-              <h2 style={{ margin: 0, color: '#333' }}>Available Users for Survey</h2>
-              <button style={{
-                padding: '10px 20px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <span>👤</span> Add New User
-              </button>
-            </div>
-
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '20px', 
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ marginBottom: '20px' }}>
-                <select style={{
-                  padding: '10px',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  width: '300px'
-                }}>
-                  <option>Select Survey to Assign Users</option>
-                  {surveys.map(survey => (
-                    <option key={survey.id} value={survey.id}>{survey.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
-                gap: '15px'
-              }}>
-                {availableUsers.map(user => (
-                  <div key={user.id} style={{
-                    padding: '15px',
-                    border: '1px solid #eee',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '15px'
-                  }}>
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: '#007bff',
-                      color: 'white',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold'
-                    }}>
-                      {user.name.charAt(0)}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '600' }}>{user.name}</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
-                      <div style={{ fontSize: '11px', color: '#888' }}>{user.department}</div>
-                    </div>
-                    <div>
-                      <input 
-                        type="radio" 
-                        name="selectedUser" 
-                        value={user.id}
-                        style={{ transform: 'scale(1.2)' }}
-                      />
-                    </div>
+                      gap: '8px'
+                    }}
+                  >
+                    <span>👤</span> Add New User
+                  </button>
+                </div>
+              </div>
+
+              {userError && (
+                <div style={{
+                  backgroundColor: '#fff3cd',
+                  color: '#856404',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  marginBottom: '20px',
+                  fontSize: '14px',
+                  border: '1px solid #ffeaa7'
+                }}>
+                  ⚠️ {userError}
+                </div>
+              )}
+
+              {/* Add User Form */}
+              <div style={{ 
+                backgroundColor: 'white', 
+                padding: '20px', 
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                marginBottom: '20px'
+              }}>
+                <h3 style={{ marginTop: 0 }}>Add New User</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Name</label>
+                    <input
+                      type="text"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                      placeholder="Enter full name"
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
+                      }}
+                    />
                   </div>
-                ))}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Email</label>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                      placeholder="Enter email"
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Department</label>
+                    <input
+                      type="text"
+                      value={newUser.department}
+                      onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+                      placeholder="Enter department"
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div style={{ 
-                marginTop: '30px', 
-                paddingTop: '20px', 
-                borderTop: '1px solid #eee',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
+                backgroundColor: 'white', 
+                padding: '20px', 
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
               }}>
-                <div>
-                  <strong>Selected Users:</strong>
-                  <span style={{ marginLeft: '10px', color: '#666' }}>0 users selected</span>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Select Survey to Assign Users</label>
+                  <select 
+                    value={selectedSurveyForAssignment}
+                    onChange={(e) => setSelectedSurveyForAssignment(e.target.value)}
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      width: '300px'
+                    }}
+                  >
+                    <option value="">Select Survey</option>
+                    {surveys.map(survey => (
+                      <option key={survey.id} value={survey.id}>{survey.name}</option>
+                    ))}
+                  </select>
                 </div>
-                <button style={{
-                  padding: '10px 30px',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: '600'
-                }}>
-                  Assign Selected Users
-                </button>
+
+                {loadingUsers ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <div style={{
+                      display: 'inline-block',
+                      width: '40px',
+                      height: '40px',
+                      border: '4px solid #f3f3f3',
+                      borderTop: '4px solid #007bff',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <p style={{ marginTop: '10px', color: '#666' }}>Loading users from database...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
+                      gap: '15px'
+                    }}>
+                      {availableUsers.map(user => (
+                        <div key={user._id} style={{
+                          padding: '15px',
+                          border: '1px solid #eee',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '15px',
+                          backgroundColor: selectedUserIds.includes(user._id) ? '#e8f4ff' : 'white'
+                        }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold'
+                          }}>
+                            {user.name?.charAt(0) || 'U'}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600' }}>{user.name}</div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+                            <div style={{ fontSize: '11px', color: '#888' }}>{user.department || 'No department'}</div>
+                          </div>
+                          <div>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedUserIds.includes(user._id)}
+                              onChange={() => handleUserSelection(user._id)}
+                              style={{ transform: 'scale(1.2)' }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {availableUsers.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                        <p>No users found in database.</p>
+                        <p>Add users using the form above or check your backend connection.</p>
+                      </div>
+                    )}
+
+                    <div style={{ 
+                      marginTop: '30px', 
+                      paddingTop: '20px', 
+                      borderTop: '1px solid #eee',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <strong>Selected Users:</strong>
+                        <span style={{ marginLeft: '10px', color: '#666' }}>
+                          {selectedUserIds.length} user(s) selected
+                        </span>
+                      </div>
+                      <button 
+                        onClick={handleAssignUsersToSurvey}
+                        disabled={!selectedSurveyForAssignment || selectedUserIds.length === 0}
+                        style={{
+                          padding: '10px 30px',
+                          backgroundColor: !selectedSurveyForAssignment || selectedUserIds.length === 0 ? '#ccc' : '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: !selectedSurveyForAssignment || selectedUserIds.length === 0 ? 'not-allowed' : 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Assign Selected Users
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeSection === 'assessment' && (
-          <div>
-            <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Assessment Section</h2>
-            
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '25px', 
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-              marginBottom: '20px'
-            }}>
-              <h3 style={{ marginTop: 0, color: '#333' }}>Active Assessments</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                {assessments.map(assessment => (
-                  <div key={assessment.id} style={{
-                    padding: '20px',
-                    border: '1px solid #eee',
-                    borderRadius: '8px',
-                    backgroundColor: assessment.status === 'Completed' ? '#f8fff8' : 
-                                   assessment.status === 'In Progress' ? '#fff8e1' : '#f8f9fa'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ margin: 0 }}>{assessment.name}</h4>
-                      <span style={{
-                        padding: '3px 10px',
-                        backgroundColor: assessment.status === 'Completed' ? '#28a745' : 
-                                       assessment.status === 'In Progress' ? '#ffc107' : '#6c757d',
-                        color: 'white',
-                        borderRadius: '20px',
-                        fontSize: '12px'
-                      }}>
-                        {assessment.status}
-                      </span>
-                    </div>
-                    <p style={{ color: '#666', fontSize: '14px', margin: '10px 0' }}>
-                      User: {assessment.user}
-                    </p>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                      <button style={{
-                        padding: '8px 15px',
-                        backgroundColor: '#17a2b8',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '14px'
-                      }}>
-                        View Details
-                      </button>
-                      {assessment.status === 'Pending' && (
+          {activeSection === 'assessment' && (
+            <div>
+              <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Assessment Section</h2>
+              
+              <div style={{ 
+                backgroundColor: 'white', 
+                padding: '25px', 
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                marginBottom: '20px'
+              }}>
+                <h3 style={{ marginTop: 0, color: '#333' }}>Active Assessments</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  {assessments.map(assessment => (
+                    <div key={assessment.id} style={{
+                      padding: '20px',
+                      border: '1px solid #eee',
+                      borderRadius: '8px',
+                      backgroundColor: assessment.status === 'Completed' ? '#f8fff8' : 
+                                     assessment.status === 'In Progress' ? '#fff8e1' : '#f8f9fa'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ margin: 0 }}>{assessment.name}</h4>
+                        <span style={{
+                          padding: '3px 10px',
+                          backgroundColor: assessment.status === 'Completed' ? '#28a745' : 
+                                         assessment.status === 'In Progress' ? '#ffc107' : '#6c757d',
+                          color: 'white',
+                          borderRadius: '20px',
+                          fontSize: '12px'
+                        }}>
+                          {assessment.status}
+                        </span>
+                      </div>
+                      <p style={{ color: '#666', fontSize: '14px', margin: '10px 0' }}>
+                        User: {assessment.userName}
+                      </p>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                         <button style={{
                           padding: '8px 15px',
-                          backgroundColor: '#007bff',
+                          backgroundColor: '#17a2b8',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           cursor: 'pointer',
                           fontSize: '14px'
                         }}>
-                          Start Assessment
+                          View Details
                         </button>
-                      )}
+                        {assessment.status === 'Pending' && (
+                          <button 
+                            onClick={() => handleUpdateAssessmentStatus(assessment.id, 'In Progress')}
+                            style={{
+                              padding: '8px 15px',
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            Start Assessment
+                          </button>
+                        )}
+                        {assessment.status === 'In Progress' && (
+                          <button 
+                            onClick={() => handleUpdateAssessmentStatus(assessment.id, 'Completed')}
+                            style={{
+                              padding: '8px 15px',
+                              backgroundColor: '#28a745',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Mark Complete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ 
+                backgroundColor: 'white', 
+                padding: '25px', 
+                borderRadius: '10px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+              }}>
+                <h3 style={{ marginTop: 0, color: '#333' }}>Create New Assessment</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Select Survey</label>
+                    <select 
+                      value={newAssessment.surveyId}
+                      onChange={(e) => setNewAssessment({...newAssessment, surveyId: e.target.value})}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        border: '1px solid #ddd', 
+                        borderRadius: '6px' 
+                      }}
+                    >
+                      <option value="">Choose a survey...</option>
+                      {surveys.map(survey => (
+                        <option key={survey.id} value={survey.id}>{survey.name}</option>
+                      ))}
+                    </select>
+                    
+                    {/* Display competencies for selected survey */}
+                    {newAssessment.surveyId && (
+                      <div style={{ marginTop: '10px' }}>
+                        <strong style={{ fontSize: '14px' }}>Survey Competencies:</strong>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px' }}>
+                          {(() => {
+                            const selectedSurvey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
+                            if (!selectedSurvey) return null;
+                            
+                            return competencies
+                              .filter(comp => selectedSurvey.competencies.includes(comp.id))
+                              .map(comp => (
+                                <span key={comp.id} style={{
+                                  padding: '3px 8px',
+                                  backgroundColor: comp.category === 'Technical' ? '#e3f2fd' : 
+                                                 comp.category === 'Behavioral' ? '#f3e5f5' : 
+                                                 comp.category === 'Leadership' ? '#e8f5e8' :
+                                                 comp.category === 'Analytical' ? '#fff3cd' : '#f8d7da',
+                                  borderRadius: '12px',
+                                  fontSize: '12px'
+                                }}>
+                                  {comp.name}
+                                </span>
+                              ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Select User</label>
+                    <select 
+                      value={newAssessment.userId}
+                      onChange={(e) => setNewAssessment({...newAssessment, userId: e.target.value})}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        border: '1px solid #ddd', 
+                        borderRadius: '6px' 
+                      }}
+                    >
+                      <option value="">Choose a user...</option>
+                      {availableUsers.map(user => (
+                        <option key={user._id} value={user._id}>{user.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Display total questions for selected survey */}
+                {newAssessment.surveyId && (
+                  <div style={{ 
+                    backgroundColor: '#f8f9fa',
+                    padding: '15px',
+                    borderRadius: '6px',
+                    marginBottom: '20px'
+                  }}>
+                    <strong>Assessment Details:</strong>
+                    <div style={{ marginTop: '10px', fontSize: '14px' }}>
+                      {(() => {
+                        const selectedSurvey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
+                        if (!selectedSurvey) return null;
+                        
+                        const surveyCompetencies = competencies.filter(comp => 
+                          selectedSurvey.competencies.includes(comp.id)
+                        );
+                        const totalQuestions = surveyCompetencies.reduce((total, comp) => 
+                          total + comp.questionsCount, 0
+                        );
+                        const totalCompetencies = surveyCompetencies.length;
+                        
+                        return (
+                          <>
+                            <div>• Total Competencies: {totalCompetencies}</div>
+                            <div>• Total Questions: {totalQuestions}</div>
+                            <div>• Estimated Time: {Math.ceil(totalQuestions * 2)} minutes</div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
-                ))}
+                )}
+                
+                <button 
+                  onClick={handleCreateAssessment}
+                  disabled={!newAssessment.surveyId || !newAssessment.userId}
+                  style={{
+                    marginTop: '20px',
+                    padding: '12px 30px',
+                    backgroundColor: !newAssessment.surveyId || !newAssessment.userId ? '#ccc' : '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: !newAssessment.surveyId || !newAssessment.userId ? 'not-allowed' : 'pointer',
+                    fontWeight: '600',
+                    fontSize: '16px'
+                  }}
+                >
+                  Create Assessment
+                </button>
               </div>
             </div>
+          )}
 
+          {activeSection === 'settings' && (
             <div style={{ 
               backgroundColor: 'white', 
-              padding: '25px', 
+              padding: '30px', 
               borderRadius: '10px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
             }}>
-              <h3 style={{ marginTop: 0, color: '#333' }}>Create New Assessment</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Settings</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Select Survey</label>
-                  <select style={{ 
-                    width: '100%', 
-                    padding: '10px', 
-                    border: '1px solid #ddd', 
-                    borderRadius: '6px' 
-                  }}>
-                    <option>Choose a survey...</option>
-                    {surveys.map(survey => (
-                      <option key={survey.id} value={survey.id}>{survey.name}</option>
-                    ))}
-                  </select>
+                  <h3 style={{ color: '#333' }}>System Settings</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Default Assessment Duration (days)</label>
+                      <input 
+                        type="number" 
+                        value={settings.defaultDuration}
+                        onChange={(e) => setSettings({...settings, defaultDuration: parseInt(e.target.value)})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '10px', 
+                          border: '1px solid #ddd', 
+                          borderRadius: '6px' 
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Notification Email</label>
+                      <input 
+                        type="email" 
+                        value={settings.notificationEmail}
+                        onChange={(e) => setSettings({...settings, notificationEmail: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '10px', 
+                          border: '1px solid #ddd', 
+                          borderRadius: '6px' 
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Select User</label>
-                  <select style={{ 
-                    width: '100%', 
-                    padding: '10px', 
-                    border: '1px solid #ddd', 
-                    borderRadius: '6px' 
-                  }}>
-                    <option>Choose a user...</option>
-                    {availableUsers.map(user => (
-                      <option key={user.id} value={user.id}>{user.name}</option>
-                    ))}
-                  </select>
+                  <h3 style={{ color: '#333' }}>User Preferences</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={settings.emailNotifications}
+                          onChange={(e) => setSettings({...settings, emailNotifications: e.target.checked})}
+                        />
+                        Email notifications for new assessments
+                      </label>
+                    </div>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={settings.autoSave}
+                          onChange={(e) => setSettings({...settings, autoSave: e.target.checked})}
+                        />
+                        Auto-save assessment progress
+                      </label>
+                    </div>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={settings.requireApproval}
+                          onChange={(e) => setSettings({...settings, requireApproval: e.target.checked})}
+                        />
+                        Require assessment approval
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <button style={{
-                marginTop: '20px',
-                padding: '12px 30px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '16px'
-              }}>
-                Create Assessment
+              <button 
+                onClick={handleSaveSettings}
+                style={{
+                  marginTop: '30px',
+                  padding: '12px 30px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Save Settings
               </button>
             </div>
-          </div>
-        )}
-
-        {activeSection === 'settings' && (
-          <div style={{ 
-            backgroundColor: 'white', 
-            padding: '30px', 
-            borderRadius: '10px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-          }}>
-            <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Settings</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-              <div>
-                <h3 style={{ color: '#333' }}>System Settings</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Default Assessment Duration (days)</label>
-                    <input 
-                      type="number" 
-                      defaultValue="7"
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '6px' 
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Notification Email</label>
-                    <input 
-                      type="email" 
-                      defaultValue="admin@example.com"
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '6px' 
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 style={{ color: '#333' }}>User Preferences</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input type="checkbox" defaultChecked />
-                      Email notifications for new assessments
-                    </label>
-                  </div>
-                  <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input type="checkbox" defaultChecked />
-                      Auto-save assessment progress
-                    </label>
-                  </div>
-                  <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input type="checkbox" />
-                      Require assessment approval
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button style={{
-              marginTop: '30px',
-              padding: '12px 30px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>
-              Save Settings
-            </button>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default App;
