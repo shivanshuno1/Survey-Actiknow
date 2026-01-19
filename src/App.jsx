@@ -616,6 +616,33 @@ function App() {
     }
   };
 
+  const handleUpdateAssessmentStatus = (assessmentId, newStatus) => {
+  console.log('Updating assessment:', assessmentId, 'to status:', newStatus);
+  
+  if (newStatus === 'Completed') {
+    // Use functional update to ensure we have the latest state
+    setAssessments(prevAssessments => {
+      const updated = prevAssessments.filter(assessment => assessment.id !== assessmentId);
+      console.log(`Removed assessment ${assessmentId}. Before: ${prevAssessments.length}, After: ${updated.length}`);
+      return updated;
+    });
+    
+    // Optional: Show a temporary message
+    setTimeout(() => {
+      alert('Assessment completed and removed!');
+    }, 100);
+  } else {
+    // Use functional update for status changes too
+    setAssessments(prevAssessments => 
+      prevAssessments.map(assessment => 
+        assessment.id === assessmentId 
+          ? { ...assessment, status: newStatus }
+          : assessment
+      )
+    );
+  }
+};
+
   // Question Functions
   const handleCreateQuestion = () => {
     if (!newQuestion.text.trim()) {
@@ -2243,10 +2270,10 @@ const handleCreateAssessment = () => {
               }}>
                 <h3 style={{ marginTop: 0, color: '#333' }}>Active Assessments ({assessments.length})</h3>
                 
-                {assessments.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                    <p>No assessments found. Create assessments by assigning users to surveys or using the form below.</p>
-                  </div>
+{assessments.length === 0 ? (
+  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+    <p>No assessments found. Create assessments by assigning users to surveys or using the form below.</p>
+  </div>
 ) : (
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
     {assessments.map(assessment => (
@@ -2282,6 +2309,23 @@ const handleCreateAssessment = () => {
             <option value="Completed">Completed</option>
           </select>
         </div>
+        {assessment.status === 'Completed' && (
+          <div style={{ marginTop: '10px', textAlign: 'center' }}>
+            <button 
+              onClick={() => handleUpdateAssessmentStatus(assessment.id, 'Completed')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              Mark as Completed
+            </button>
+          </div>
+        )}
       </div>
     ))}
   </div>
