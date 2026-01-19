@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import './App.css';
+import AssessmentQuestionsPage from './Assessment/AssessmentQuestionsPage.jsx';
 
 // Sidebar Item Component
 const SidebarItem = ({ icon, label, active, onClick }) => (
@@ -40,9 +42,12 @@ function App() {
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
   const [apiToken, setApiToken] = useState('');
-
+  // Add these states near your other state declarations
+ const [viewingAssessment, setViewingAssessment] = useState(null);
+ const [assessmentQuestions, setAssessmentQuestions] = useState([]);
+ const [assessmentResponses, setAssessmentResponses] = useState({});
   // Dashboard State
-  const [activeSection, setActiveSection] = useState('surveys');
+ const [activeSection, setActiveSection] = useState('surveys');
   
   // Surveys
   const [surveys, setSurveys] = useState([
@@ -575,6 +580,52 @@ function App() {
     setSelectedCompetencies([]);
     alert('Survey created successfully!');
   };
+
+  // Function to handle viewing assessment details
+const handleViewAssessment = (assessment) => {
+  // Find the survey for this assessment
+  const survey = surveys.find(s => s.id === assessment.surveyId);
+  
+  if (!survey) {
+    alert('Survey not found for this assessment');
+    return;
+  }
+  
+  // Get all competencies for this survey
+  const surveyCompetencies = competencies.filter(comp => 
+    survey.competencies.includes(comp.id)
+  );
+  
+  // Get all questions for these competencies
+  const questionsForAssessment = [];
+  surveyCompetencies.forEach(comp => {
+    const compQuestions = questions.filter(q => q.competencyId === comp.id);
+    questionsForAssessment.push(...compQuestions);
+  });
+  
+  if (questionsForAssessment.length === 0) {
+    alert('No questions found for this assessment');
+    return;
+  }
+  
+  // Initialize responses object
+  const initialResponses = {};
+  questionsForAssessment.forEach(q => {
+    initialResponses[q.id] = '';
+  });
+  
+  // Set the state for viewing assessment
+  setViewingAssessment(assessment);
+  setAssessmentQuestions(questionsForAssessment);
+  setAssessmentResponses(initialResponses);
+  
+  // Optional: Generate a shareable link
+  const assessmentLink = `${window.location.origin}/assessment/${assessment.id}`;
+  console.log('Assessment link:', assessmentLink);
+  
+  // You could also show a modal with the link or navigate directly
+  // For now, we'll just set the state and the component will render
+};
 
   const handleDeleteSurvey = (id) => {
     if (window.confirm('Are you sure you want to delete this survey?')) {
@@ -2299,6 +2350,23 @@ const handleCreateAssessment = () => {
           }}>
             {assessment.status}
           </span>
+          <button 
+  onClick={() => handleViewAssessment(assessment)}
+  style={{
+    padding: '8px 5px',
+    backgroundColor: '#17a2b8',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    height: '54px',
+    width:'85px'
+  }}
+>
+  Take Assessment
+</button>
+
           <select 
             value={assessment.status}
             onChange={(e) => setAssessments(assessments.map(a => a.id === assessment.id ? {...a, status: e.target.value} : a))}
