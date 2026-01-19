@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema({
 
 // Use the exact collection name 'Usernames'
 const User = mongoose.model('User', userSchema, 'users');
+
 // 1. Login endpoint - Check credentials from MongoDB
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -79,6 +80,8 @@ app.post('/api/auth/login', async (req, res) => {
         message: 'Invalid password. Please try again.'
       });
     }
+
+   
 
     // Create JWT token
     const token = jwt.sign(
