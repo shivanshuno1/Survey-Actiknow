@@ -583,6 +583,8 @@ function App() {
 
   // Function to handle viewing assessment details
 const handleViewAssessment = (assessment) => {
+  console.log('Opening assessment:', assessment.id);
+  
   // Find the survey for this assessment
   const survey = surveys.find(s => s.id === assessment.surveyId);
   
@@ -596,6 +598,11 @@ const handleViewAssessment = (assessment) => {
     survey.competencies.includes(comp.id)
   );
   
+  if (surveyCompetencies.length === 0) {
+    alert('No competencies found for this survey');
+    return;
+  }
+  
   // Get all questions for these competencies
   const questionsForAssessment = [];
   surveyCompetencies.forEach(comp => {
@@ -608,6 +615,8 @@ const handleViewAssessment = (assessment) => {
     return;
   }
   
+  console.log(`Found ${questionsForAssessment.length} questions for assessment`);
+  
   // Initialize responses object
   const initialResponses = {};
   questionsForAssessment.forEach(q => {
@@ -619,12 +628,14 @@ const handleViewAssessment = (assessment) => {
   setAssessmentQuestions(questionsForAssessment);
   setAssessmentResponses(initialResponses);
   
-  // Optional: Generate a shareable link
-  const assessmentLink = `${window.location.origin}/assessment/${assessment.id}`;
-  console.log('Assessment link:', assessmentLink);
+  // Update assessment status to "In Progress"
+  if (assessment.status === 'Pending') {
+    handleUpdateAssessmentStatus(assessment.id, 'In Progress');
+  }
   
-  // You could also show a modal with the link or navigate directly
-  // For now, we'll just set the state and the component will render
+  // Generate a shareable link (for reference)
+  const assessmentLink = `${window.location.origin}/assessment/${assessment.id}`;
+  console.log('Assessment accessible at:', assessmentLink);
 };
 
   const handleDeleteSurvey = (id) => {
