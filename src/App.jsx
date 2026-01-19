@@ -650,8 +650,7 @@ function App() {
     setNewQuestion({ text: '', type: 'Multiple Choice', competencyId: '' });
     alert('Question added successfully!');
   };
-
-  const handleDeleteQuestion = (id) => {
+const handleDeleteQuestion = (id) => {
     if (window.confirm('Are you sure you want to delete this question?')) {
       const questionToDelete = questions.find(q => q.id === id);
       setQuestions(questions.filter(q => q.id !== id));
@@ -675,92 +674,119 @@ function App() {
     );
   };
 
-  const handleAssignUsersToSurvey = () => {
-    if (!selectedSurveyForAssignment) {
-      alert('Please select a survey first');
-      return;
+  // FIXED: handleAssignUsersToSurvey function
+  // FIXED: handleAssignUsersToSurvey function
+// FIXED: handleAssignUsersToSurvey function
+const handleAssignUsersToSurvey = () => {
+  if (!selectedSurveyForAssignment) {
+    alert('Please select a survey first');
+    return;
+  }
+
+  if (selectedUserIds.length === 0) {
+    alert('Please select at least one user');
+    return;
+  }
+
+  // Update survey's assigned users
+  setSurveys(surveys.map(survey => 
+    survey.id === parseInt(selectedSurveyForAssignment)
+      ? { ...survey, assignedTo: [...new Set([...survey.assignedTo, ...selectedUserIds])] }
+      : survey
+  ));
+
+  // Create assessments for ALL assigned users
+  const survey = surveys.find(s => s.id === parseInt(selectedSurveyForAssignment));
+  const newAssessments = [];
+
+  // Get the highest current assessment ID
+  const maxAssessmentId = assessments.length > 0 
+    ? Math.max(...assessments.map(a => a.id))
+    : 0;
+
+  selectedUserIds.forEach((userId, index) => {
+    const user = availableUsers.find(u => u._id === userId);
+    const existingAssessment = assessments.find(a => 
+      a.userId === userId && a.surveyId === parseInt(selectedSurveyForAssignment)
+    );
+
+    if (!existingAssessment && user) {
+      // Generate unique ID - starting from maxAssessmentId + 1
+      const newAssessmentId = maxAssessmentId + index + 1;
+
+      const newAssessmentObj = {
+        id: newAssessmentId,
+        name: `${survey.name} - ${user.name}`,
+        userId: userId,
+        userName: user.name,
+        status: 'Pending',
+        surveyId: survey.id
+      };
+      newAssessments.push(newAssessmentObj);
     }
+  });
 
-    if (selectedUserIds.length === 0) {
-      alert('Please select at least one user');
-      return;
-    }
+  // Add all new assessments at once
+  if (newAssessments.length > 0) {
+    setAssessments(prevAssessments => [...prevAssessments, ...newAssessments]);
+  }
 
-    setSurveys(surveys.map(survey => 
-      survey.id === parseInt(selectedSurveyForAssignment)
-        ? { ...survey, assignedTo: [...new Set([...survey.assignedTo, ...selectedUserIds])] }
-        : survey
-    ));
-
-    // Create assessments for assigned users
-    const survey = surveys.find(s => s.id === parseInt(selectedSurveyForAssignment));
-    selectedUserIds.forEach(userId => {
-      const user = availableUsers.find(u => u._id === userId);
-      const existingAssessment = assessments.find(a => 
-        a.userId === userId && a.surveyId === parseInt(selectedSurveyForAssignment)
-      );
-
-      if (!existingAssessment && user) {
-        const newAssessmentObj = {
-          id: assessments.length + 1,
-          name: `${survey.name} - ${user.name}`,
-          userId: userId,
-          userName: user.name,
-          status: 'Pending',
-          surveyId: survey.id
-        };
-        setAssessments([...assessments, newAssessmentObj]);
-      }
-    });
-
-    setSelectedUserIds([]);
-    alert('Users assigned successfully!');
-  };
-
+  setSelectedUserIds([]);
+  alert(`Users assigned successfully! ${newAssessments.length} new assessment(s) created.`);
+};
   // Assessment Functions
-  const handleCreateAssessment = () => {
-    if (!newAssessment.surveyId || !newAssessment.userId) {
-      alert('Please select both survey and user');
-      return;
-    }
+ // FIXED: handleCreateAssessment function
+const handleCreateAssessment = () => {
+  if (!newAssessment.surveyId || !newAssessment.userId) {
+    alert('Please select both survey and user');
+    return;
+  }
 
-    const survey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
-    const user = availableUsers.find(u => u._id === newAssessment.userId);
+  const survey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
+  const user = availableUsers.find(u => u._id === newAssessment.userId);
 
-    if (!survey || !user) {
-      alert('Invalid survey or user selection');
-      return;
-    }
+  if (!survey || !user) {
+    alert('Invalid survey or user selection');
+    return;
+  }
 
-    const newAssessmentObj = {
-      id: assessments.length + 1,
-      name: `${survey.name} - ${user.name}`,
-      userId: user._id,
-      userName: user.name,
-      status: 'Pending',
-      surveyId: survey.id
-    };
+  // Check if assessment already exists for this user and survey
+  const existingAssessment = assessments.find(a => 
+    a.userId === user._id && a.surveyId === survey.id
+  );
 
-    setAssessments([...assessments, newAssessmentObj]);
-    setNewAssessment({ surveyId: '', userId: '' });
-    
-    // Update survey's assigned users
-    setSurveys(surveys.map(s => 
-      s.id === survey.id 
-        ? { ...s, assignedTo: [...new Set([...s.assignedTo, user._id])] }
-        : s
-    ));
+  if (existingAssessment) {
+    alert(`Assessment already exists for ${user.name} on ${survey.name}`);
+    return;
+  }
 
-    alert('Assessment created successfully!');
+  // Generate unique ID
+  const maxAssessmentId = assessments.length > 0 
+    ? Math.max(...assessments.map(a => a.id))
+    : 0;
+  const newAssessmentId = maxAssessmentId + 1;
+
+  const newAssessmentObj = {
+    id: newAssessmentId,
+    name: `${survey.name} - ${user.name}`,
+    userId: user._id,
+    userName: user.name,
+    status: 'Pending',
+    surveyId: survey.id
   };
 
-  const handleUpdateAssessmentStatus = (assessmentId, newStatus) => {
-    setAssessments(assessments.map(assessment => 
-      assessment.id === assessmentId 
-        ? { ...assessment, status: newStatus }
-        : assessment
-    ));
-  };
+  setAssessments(prev => [...prev, newAssessmentObj]);
+  setNewAssessment({ surveyId: '', userId: '' });
+  
+  // Update survey's assigned users
+  setSurveys(prevSurveys => prevSurveys.map(s => 
+    s.id === survey.id 
+      ? { ...s, assignedTo: [...new Set([...s.assignedTo, user._id])] }
+      : s
+  ));
+
+  alert('Assessment created successfully!');
+};
 
   // Settings Functions
   const handleSaveSettings = () => {
@@ -2184,7 +2210,29 @@ function App() {
 
           {activeSection === 'assessment' && (
             <div>
-              <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>Assessment Section</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h2 style={{ margin: 0, color: '#333' }}>Assessment Section</h2>
+                <button 
+                  onClick={() => {
+                    // Force a re-render to show all assessments
+                    setAssessments([...assessments]);
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>🔄</span> Refresh Assessments
+                </button>
+              </div>
               
               <div style={{ 
                 backgroundColor: 'white', 
@@ -2193,81 +2241,51 @@ function App() {
                 boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
                 marginBottom: '20px'
               }}>
-                <h3 style={{ marginTop: 0, color: '#333' }}>Active Assessments</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                  {assessments.map(assessment => (
-                    <div key={assessment.id} style={{
-                      padding: '20px',
-                      border: '1px solid #eee',
-                      borderRadius: '8px',
-                      backgroundColor: assessment.status === 'Completed' ? '#f8fff8' : 
-                                     assessment.status === 'In Progress' ? '#fff8e1' : '#f8f9fa'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h4 style={{ margin: 0 }}>{assessment.name}</h4>
-                        <span style={{
-                          padding: '3px 10px',
-                          backgroundColor: assessment.status === 'Completed' ? '#28a745' : 
-                                         assessment.status === 'In Progress' ? '#ffc107' : '#6c757d',
-                          color: 'white',
-                          borderRadius: '20px',
-                          fontSize: '12px'
-                        }}>
-                          {assessment.status}
-                        </span>
-                      </div>
-                      <p style={{ color: '#666', fontSize: '14px', margin: '10px 0' }}>
-                        User: {assessment.userName}
-                      </p>
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                        <button style={{
-                          padding: '8px 15px',
-                          backgroundColor: '#17a2b8',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}>
-                          View Details
-                        </button>
-                        {assessment.status === 'Pending' && (
-                          <button 
-                            onClick={() => handleUpdateAssessmentStatus(assessment.id, 'In Progress')}
-                            style={{
-                              padding: '8px 15px',
-                              backgroundColor: '#007bff',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '14px'
-                            }}
-                          >
-                            Start Assessment
-                          </button>
-                        )}
-                        {assessment.status === 'In Progress' && (
-                          <button 
-                            onClick={() => handleUpdateAssessmentStatus(assessment.id, 'Completed')}
-                            style={{
-                              padding: '8px 15px',
-                              backgroundColor: '#28a745',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Mark Complete
-                          </button>
-                        )}
-
-                        {assessment.userName};
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <h3 style={{ marginTop: 0, color: '#333' }}>Active Assessments ({assessments.length})</h3>
+                
+                {assessments.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    <p>No assessments found. Create assessments by assigning users to surveys or using the form below.</p>
+                  </div>
+) : (
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+    {assessments.map(assessment => (
+      <div key={assessment.id} style={{
+        padding: '20px',
+        border: '1px solid #eee',
+        borderRadius: '8px',
+        backgroundColor: assessment.status === 'Completed' ? '#f8fff8' : 
+                       assessment.status === 'In Progress' ? '#fff8e1' : '#f8f9fa'
+      }}>
+        <h4 style={{ marginTop: 0, marginBottom: '10px' }}>{assessment.name}</h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>User: {assessment.userName}</p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>Survey: {surveys.find(s => s.id === assessment.surveyId)?.name}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+          <span style={{
+            padding: '5px 12px',
+            backgroundColor: assessment.status === 'Completed' ? '#28a745' :
+                           assessment.status === 'In Progress' ? '#ffc107' : '#6c757d',
+            color: 'white',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>
+            {assessment.status}
+          </span>
+          <select 
+            value={assessment.status}
+            onChange={(e) => setAssessments(assessments.map(a => a.id === assessment.id ? {...a, status: e.target.value} : a))}
+            style={{ padding: '5px 10px', borderRadius: '4px', border: '1px solid #ddd' }}
+          >
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
               </div>
 
               <div style={{ 
