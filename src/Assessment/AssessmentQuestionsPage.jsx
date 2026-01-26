@@ -12,7 +12,8 @@ function AssessmentQuestionsPage() {
     questions: initialQuestions = [], 
     responses: initialResponses = {},
     competencies = [],
-    userName = ''
+    userName = '',
+    currentUser = null
   } = location.state || {};
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -71,7 +72,9 @@ function AssessmentQuestionsPage() {
       state: {
         assessmentCompleted: true,
         assessmentId: assessment.id,
-        responses: finalResponses
+        responses: finalResponses,
+        submittedAt: new Date().toISOString(),
+        submittedBy: currentUser
       }
     });
   };

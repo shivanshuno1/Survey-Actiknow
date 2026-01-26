@@ -103,9 +103,11 @@ app.post('/api/auth/login', async (req, res) => {
       token: token,
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
-        created_AT: user.created_AT
+        created_AT: user.created_AT,
+        role: user.email && user.email.toLowerCase().includes('admin') ? 'Admin' : 'User'
       }
     });
 

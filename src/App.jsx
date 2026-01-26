@@ -387,11 +387,28 @@ function App() {
 
   // Handle assessment completion
   useEffect(() => {
+    console.log('Completion effect triggered. location.state:', location.state);
+    
     if (location.state?.assessmentCompleted) {
+      console.log('Assessment completion detected');
       const { assessmentId, responses } = location.state;
+      
+      console.log('Current assessmentLogs:', assessmentLogs);
+      
+      // Check if we already have a log for this assessment that was just created (within last 5 seconds)
+      const recentLog = assessmentLogs.find(log => 
+        log.assessmentId === assessmentId && 
+        new Date() - new Date(log.submittedAt) < 5000
+      );
+      
+      if (recentLog) {
+        console.log('Recent log found, skipping');
+        return; // Already processed this submission
+      }
       
       // Find the assessment to get its details
       const completedAssessment = assessments.find(a => a.id === assessmentId);
+      console.log('Completed assessment:', completedAssessment);
       
       if (completedAssessment) {
         // Create a log entry for this assessment submission
@@ -409,8 +426,15 @@ function App() {
           answeredQuestions: Object.values(responses).filter(r => r !== '' && r !== null && r !== undefined).length
         };
         
+        console.log('Creating log entry:', logEntry);
+        
         // Add log entry
-        setAssessmentLogs(prev => [logEntry, ...prev]);
+        setAssessmentLogs(prev => {
+          console.log('Previous logs:', prev);
+          const newLogs = [logEntry, ...prev];
+          console.log('New logs:', newLogs);
+          return newLogs;
+        });
       }
       
       // Update assessment status to "Completed"
@@ -437,7 +461,7 @@ function App() {
       // Clear the location state
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, assessments, surveys]);
+  }, [location.state?.assessmentCompleted, assessments, surveys]);
 
   // Fetch users from database
   const fetchUsersFromDatabase = async () => {
@@ -654,6 +678,22 @@ function App() {
 const handleViewAssessment = (assessment) => {
   console.log('Opening assessment:', assessment.id);
   
+  // Check authorization - only allow if user is assigned OR user is admin
+  const isAssignedUser = assessment.userId === userData._id || assessment.userId === userData.id;
+  const isAdmin = userData.role === 'Admin' || userData.role === 'admin';
+  
+  if (!isAssignedUser && !isAdmin) {
+    setNotification({
+      type: 'error',
+      message: 'You are not authorized to access this assessment!',
+      show: true
+    });
+    setTimeout(() => {
+      setNotification(prev => prev ? { ...prev, show: false } : null);
+    }, 4000);
+    return;
+  }
+  
   // Find the survey for this assessment
   const survey = surveys.find(s => s.id === assessment.surveyId);
   
@@ -700,7 +740,8 @@ const handleViewAssessment = (assessment) => {
       competencies: surveyCompetencies,
       questions: questionsForAssessment,
       responses: initialResponses,
-      userName: assessment.userName
+      userName: assessment.userName,
+      currentUser: userData
     }
   });
   
@@ -2465,15 +2506,34 @@ const handleCreateAssessment = () => {
                 boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
                 marginBottom: '20px'
               }}>
-                <h3 style={{ marginTop: 0, color: '#333' }}>Active Assessments ({assessments.length})</h3>
+                <h3 style={{ marginTop: 0, color: '#333' }}>
+                  {userData.role === 'Admin' || userData.role === 'admin' ? 'All Assessments' : 'Your Assessments'}
+                </h3>
                 
-{assessments.length === 0 ? (
+{(() => {
+  // Filter assessments based on user role
+  let displayedAssessments = assessments;
+  
+  if (userData.role !== 'Admin' && userData.role !== 'admin') {
+    // Regular users only see their own assessments
+    displayedAssessments = assessments.filter(a => a.userId === userData._id || a.userId === userData.id);
+  }
+  // Admins see all assessments
+  
+  return displayedAssessments.length === 0 ? (
   <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-    <p>No assessments found. Create assessments by assigning users to surveys or using the form below.</p>
+    <p>
+      {userData.role === 'Admin' || userData.role === 'admin' 
+        ? 'No assessments found. Create assessments by assigning users to surveys or using the form below.'
+        : '📭 No assessments assigned to you yet.'}
+    </p>
+    {(userData.role !== 'Admin' && userData.role !== 'admin') && (
+      <p style={{ fontSize: '14px', color: '#999' }}>Wait for your administrator to assign assessments to you.</p>
+    )}
   </div>
 ) : (
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-    {assessments.map(assessment => (
+    {displayedAssessments.map(assessment => (
       <div key={assessment.id} style={{
         padding: '20px',
         border: '1px solid #eee',
@@ -2543,7 +2603,8 @@ const handleCreateAssessment = () => {
       </div>
     ))}
   </div>
-)}
+);
+})()}
               </div>
 
               <div style={{ 
@@ -2782,7 +2843,79 @@ const handleCreateAssessment = () => {
             }}>
               <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#333' }}>Assessment Submission Logs</h2>
               
-              {assessmentLogs.length === 0 ? (
+              {(() => {
+                const isAdmin = userData.role === 'Admin' || userData.role === 'admin';
+                const userLogsCount = assessmentLogs.filter(log => 
+                  log.userId === userData._id || log.userId === userData.id
+                ).length;
+                
+                const logsToCheck = isAdmin ? assessmentLogs.length : userLogsCount;
+                
+                return logsToCheck > 0 && (
+                <div style={{ marginBottom: '20px', textAlign: 'right' }}>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${isAdmin ? 'ALL logs' : 'your logs'}? This action cannot be undone.`)) {
+                        let updatedLogs;
+                        if (isAdmin) {
+                          updatedLogs = [];
+                        } else {
+                          // Regular users only delete their own logs
+                          updatedLogs = assessmentLogs.filter(log => 
+                            log.userId !== userData._id && log.userId !== userData.id
+                          );
+                        }
+                        setAssessmentLogs(updatedLogs);
+                        localStorage.setItem('assessmentLogs', JSON.stringify(updatedLogs));
+                        
+                        setNotification({
+                          type: 'success',
+                          message: `${isAdmin ? 'All logs' : 'Your logs'} deleted successfully!`,
+                          show: true
+                        });
+                        setTimeout(() => {
+                          setNotification(prev => prev ? { ...prev, show: false } : null);
+                        }, 3000);
+                      }
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    🗑️ Delete All Logs
+                  </button>
+                </div>
+                );
+              })()}
+              
+              {(() => {
+                // Filter logs based on user role
+                let displayedLogs = assessmentLogs;
+                
+                console.log('Filtering logs. userData:', userData);
+                console.log('assessmentLogs count:', assessmentLogs.length);
+                
+                // Safety check - if userData is not loaded, show all logs (for admin)
+                if (userData && userData.role !== 'Admin' && userData.role !== 'admin') {
+                  // Regular users only see their own logs
+                  console.log('User role:', userData.role, '- applying filter');
+                  displayedLogs = assessmentLogs.filter(log => 
+                    log.userId === userData._id || log.userId === userData.id
+                  );
+                } else {
+                  console.log('Admin user or no userData - showing all logs');
+                }
+                
+                console.log('displayedLogs after filter:', displayedLogs.length);
+                
+                return displayedLogs.length === 0 ? (
                 <div style={{ 
                   textAlign: 'center', 
                   padding: '40px 20px',
@@ -2790,7 +2923,11 @@ const handleCreateAssessment = () => {
                   borderRadius: '8px',
                   color: '#666'
                 }}>
-                  <p>No assessment submissions yet</p>
+                  <p>
+                    {userData.role === 'Admin' || userData.role === 'admin'
+                      ? 'No assessment submissions yet'
+                      : '📭 No submissions for your assessments yet'}
+                  </p>
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
@@ -2811,7 +2948,7 @@ const handleCreateAssessment = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {assessmentLogs.map((log, index) => (
+                      {displayedLogs.map((log, index) => (
                         <tr key={log.id} style={{ 
                           borderBottom: '1px solid #eee',
                           backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa'
@@ -2847,7 +2984,10 @@ const handleCreateAssessment = () => {
                             <button 
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this log?')) {
-                                  setAssessmentLogs(prev => prev.filter(l => l.id !== log.id));
+                                  const updatedLogs = assessmentLogs.filter(l => l.id !== log.id);
+                                  setAssessmentLogs(updatedLogs);
+                                  localStorage.setItem('assessmentLogs', JSON.stringify(updatedLogs));
+                                  
                                   setNotification({
                                     type: 'success',
                                     message: 'Log deleted successfully!',
@@ -2876,7 +3016,8 @@ const handleCreateAssessment = () => {
                     </tbody>
                   </table>
                 </div>
-              )}
+              );
+              })()}
               
               {/* Detailed Log View Modal */}
               {selectedLog && (
@@ -2896,10 +3037,13 @@ const handleCreateAssessment = () => {
                     backgroundColor: 'white',
                     borderRadius: '10px',
                     padding: '30px',
-                    maxWidth: '800px',
-                    maxHeight: '80vh',
+                    maxWidth: '900px',
+                    width: '90%',
+                    maxHeight: '85vh',
                     overflowY: 'auto',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                    wordWrap: 'break-word',
+                    overflowWrap: 'break-word'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                       <h2 style={{ margin: 0, color: '#333' }}>Assessment Responses</h2>
@@ -2955,9 +3099,9 @@ const handleCreateAssessment = () => {
                             borderRadius: '8px',
                             border: '1px solid #eee'
                           }}>
-                            <div style={{ marginBottom: '10px' }}>
-                              <strong style={{ color: '#333' }}>Q{index + 1}: {question?.text}</strong>
-                              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '13px' }}>
+                            <div style={{ marginBottom: '10px', wordBreak: 'break-word' }}>
+                              <strong style={{ color: '#333', display: 'block', marginBottom: '5px' }}>Q{index + 1}: {question?.text}</strong>
+                              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '13px', wordBreak: 'break-word' }}>
                                 Type: {question?.type} | Competency: {question?.competencyName}
                               </p>
                             </div>
@@ -2967,7 +3111,11 @@ const handleCreateAssessment = () => {
                               borderRadius: '6px',
                               border: '1px solid #ddd',
                               color: response ? '#333' : '#999',
-                              fontStyle: response ? 'normal' : 'italic'
+                              fontStyle: response ? 'normal' : 'italic',
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              maxHeight: '200px',
+                              overflowY: 'auto'
                             }}>
                               {response || '(No response)'}
                             </div>
