@@ -1,16 +1,24 @@
 // Assessment/AssessmentQuestionsPage.jsx
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-function AssessmentQuestionsPage({ 
-  assessment, 
-  questions, 
-  responses, 
-  onResponseChange, 
-  onComplete, 
-  onClose 
-}) {
+function AssessmentQuestionsPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Extract data from location state
+  const { 
+    assessment, 
+    questions: initialQuestions = [], 
+    responses: initialResponses = {},
+    competencies = [],
+    userName = ''
+  } = location.state || {};
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentResponse, setCurrentResponse] = useState('');
+  const [responses, setResponses] = useState(initialResponses);
+  const [questions, setQuestions] = useState(initialQuestions);
 
   useEffect(() => {
     // Initialize current response when question changes
@@ -20,30 +28,63 @@ function AssessmentQuestionsPage({
     }
   }, [currentQuestionIndex, questions, responses]);
 
+  const handleResponseChange = (questionId, response) => {
+    setResponses({
+      ...responses,
+      [questionId]: response
+    });
+  };
+
   const handleNext = () => {
     // Save current response
     const currentQuestion = questions[currentQuestionIndex];
-    onResponseChange(currentQuestion.id, currentResponse);
+    handleResponseChange(currentQuestion.id, currentResponse);
     
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       // All questions answered, complete assessment
-      onComplete(responses);
+      handleComplete();
     }
   };
 
   const handlePrev = () => {
     if (currentQuestionIndex > 0) {
+      const currentQuestion = questions[currentQuestionIndex];
+      handleResponseChange(currentQuestion.id, currentResponse);
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
+  };
+
+  const handleComplete = () => {
+    // Save final response before completing
+    const currentQuestion = questions[currentQuestionIndex];
+    const finalResponses = {
+      ...responses,
+      [currentQuestion.id]: currentResponse
+    };
+    
+    console.log('Assessment completed with responses:', finalResponses);
+    
+    // Navigate back with completion data
+    navigate('/', {
+      state: {
+        assessmentCompleted: true,
+        assessmentId: assessment.id,
+        responses: finalResponses
+      }
+    });
+  };
+
+  const handleClose = () => {
+    navigate('/');
   };
 
   if (!assessment || questions.length === 0) {
     return (
       <div>
         <h3>No assessment data</h3>
-        <button onClick={onClose}>Go Back</button>
+        <button onClick={handleClose}>Go Back</button>
       </div>
     );
   }
@@ -55,7 +96,7 @@ function AssessmentQuestionsPage({
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>{assessment.name}</h2>
-        <button onClick={onClose}>Exit</button>
+        <button onClick={handleClose}>Exit</button>
       </div>
       
       <div style={{ margin: '20px 0' }}>
@@ -94,8 +135,14 @@ function AssessmentQuestionsPage({
                 onClick={() => setCurrentResponse(rating.toString())}
                 style={{ 
                   marginRight: '10px',
-                  padding: '10px',
-                  backgroundColor: currentResponse === rating.toString() ? '#007bff' : '#e9ecef'
+                  marginBottom: '10px',
+                  padding: '10px 15px',
+                  backgroundColor: currentResponse === rating.toString() ? '#007bff' : '#e9ecef',
+                  color: currentResponse === rating.toString() ? 'white' : '#333',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
                 }}
               >
                 {rating}
@@ -103,8 +150,90 @@ function AssessmentQuestionsPage({
             ))}
           </div>
         )}
+
+        {currentQuestion.type === 'Multiple Choice' && (
+          <div style={{ marginTop: '15px' }}>
+            {['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'].map((option) => (
+              <div 
+                key={option}
+                style={{ marginBottom: '12px' }}
+              >
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  cursor: 'pointer',
+                  padding: '10px',
+                  backgroundColor: currentResponse === option ? '#e3f2fd' : 'transparent',
+                  borderRadius: '4px',
+                  border: currentResponse === option ? '2px solid #007bff' : '1px solid #ddd'
+                }}>
+                  <input 
+                    type="radio" 
+                    name="mcq"
+                    value={option}
+                    checked={currentResponse === option}
+                    onChange={(e) => setCurrentResponse(e.target.value)}
+                    style={{ marginRight: '10px', cursor: 'pointer' }}
+                  />
+                  {option}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {currentQuestion.type === 'Yes/No' && (
+          <div style={{ marginTop: '15px', display: 'flex', gap: '15px' }}>
+            {['Yes', 'No'].map((option) => (
+              <button
+                key={option}
+                onClick={() => setCurrentResponse(option)}
+                style={{ 
+                  padding: '12px 30px',
+                  backgroundColor: currentResponse === option ? '#007bff' : '#e9ecef',
+                  color: currentResponse === option ? 'white' : '#333',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '16px'
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {currentQuestion.type === 'Text Response' && (
+          <div style={{ marginTop: '15px' }}>
+            <textarea
+              value={currentResponse}
+              onChange={(e) => setCurrentResponse(e.target.value)}
+              placeholder="Enter your response here..."
+              style={{
+                width: '100%',
+                minHeight: '150px',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'Arial, sans-serif'
+              }}
+            />
+          </div>
+        )}
         
-        {/* Add more question type handlers as needed */}
+        {!['Rating Scale', 'Multiple Choice', 'Yes/No', 'Text Response'].includes(currentQuestion.type) && (
+          <div style={{ 
+            padding: '15px', 
+            backgroundColor: '#fff3cd',
+            borderRadius: '4px',
+            marginTop: '15px'
+          }}>
+            <p>Please provide your response for this question.</p>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>

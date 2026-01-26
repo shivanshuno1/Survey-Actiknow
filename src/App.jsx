@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import AssessmentQuestionsPage from './Assessment/AssessmentQuestionsPage.jsx';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Sidebar Item Component
 const SidebarItem = ({ icon, label, active, onClick }) => (
@@ -32,6 +33,8 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
 
 function App() {
   // Authentication State
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState('');
@@ -48,6 +51,12 @@ function App() {
  const [assessmentResponses, setAssessmentResponses] = useState({});
   // Dashboard State
  const [activeSection, setActiveSection] = useState('surveys');
+ 
+ // Notification State
+ const [notification, setNotification] = useState(null);
+ 
+ // Selected Log State
+ const [selectedLog, setSelectedLog] = useState(null);
   
   // Surveys
   const [surveys, setSurveys] = useState([
@@ -311,6 +320,9 @@ function App() {
   ]);
   const [newAssessment, setNewAssessment] = useState({ surveyId: '', userId: '' });
 
+  // Assessment Logs
+  const [assessmentLogs, setAssessmentLogs] = useState([]);
+
   // Settings
   const [settings, setSettings] = useState({
     defaultDuration: 7,
@@ -350,12 +362,14 @@ function App() {
       const savedQuestions = localStorage.getItem('questions');
       const savedAssessments = localStorage.getItem('assessments');
       const savedSettings = localStorage.getItem('settings');
+      const savedLogs = localStorage.getItem('assessmentLogs');
 
       if (savedSurveys) setSurveys(JSON.parse(savedSurveys));
       if (savedCompetencies) setCompetencies(JSON.parse(savedCompetencies));
       if (savedQuestions) setQuestions(JSON.parse(savedQuestions));
       if (savedAssessments) setAssessments(JSON.parse(savedAssessments));
       if (savedSettings) setSettings(JSON.parse(savedSettings));
+      if (savedLogs) setAssessmentLogs(JSON.parse(savedLogs));
     }
   }, [isLoggedIn]);
 
@@ -367,8 +381,63 @@ function App() {
       localStorage.setItem('questions', JSON.stringify(questions));
       localStorage.setItem('assessments', JSON.stringify(assessments));
       localStorage.setItem('settings', JSON.stringify(settings));
+      localStorage.setItem('assessmentLogs', JSON.stringify(assessmentLogs));
     }
-  }, [surveys, competencies, questions, assessments, settings, isLoggedIn]);
+  }, [surveys, competencies, questions, assessments, settings, assessmentLogs, isLoggedIn]);
+
+  // Handle assessment completion
+  useEffect(() => {
+    if (location.state?.assessmentCompleted) {
+      const { assessmentId, responses } = location.state;
+      
+      // Find the assessment to get its details
+      const completedAssessment = assessments.find(a => a.id === assessmentId);
+      
+      if (completedAssessment) {
+        // Create a log entry for this assessment submission
+        const logEntry = {
+          id: Date.now(),
+          assessmentId: assessmentId,
+          assessmentName: completedAssessment.name,
+          userName: completedAssessment.userName,
+          userId: completedAssessment.userId,
+          surveyId: completedAssessment.surveyId,
+          surveyName: surveys.find(s => s.id === completedAssessment.surveyId)?.name,
+          submittedAt: new Date().toISOString(),
+          responses: responses,
+          totalQuestions: Object.keys(responses).length,
+          answeredQuestions: Object.values(responses).filter(r => r !== '' && r !== null && r !== undefined).length
+        };
+        
+        // Add log entry
+        setAssessmentLogs(prev => [logEntry, ...prev]);
+      }
+      
+      // Update assessment status to "Completed"
+      setAssessments(prev => 
+        prev.map(a => 
+          a.id === assessmentId 
+            ? { ...a, status: 'Completed', responses: responses }
+            : a
+        )
+      );
+      
+      // Show success notification
+      setNotification({
+        type: 'success',
+        message: 'Assessment submitted successfully!',
+        show: true
+      });
+      
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => {
+        setNotification(prev => prev ? { ...prev, show: false } : null);
+      }, 5000);
+   
+      // Clear the location state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, assessments, surveys]);
 
   // Fetch users from database
   const fetchUsersFromDatabase = async () => {
@@ -623,21 +692,23 @@ const handleViewAssessment = (assessment) => {
     initialResponses[q.id] = '';
   });
   
-  // Set the state for viewing assessment
-  setViewingAssessment(assessment);
-  setAssessmentQuestions(questionsForAssessment);
-  setAssessmentResponses(initialResponses);
+  // Navigate to assessment page with state
+  navigate(`/assessment/${assessment.id}`, {
+    state: {
+      assessment: assessment,
+      survey: survey,
+      competencies: surveyCompetencies,
+      questions: questionsForAssessment,
+      responses: initialResponses,
+      userName: assessment.userName
+    }
+  });
   
   // Update assessment status to "In Progress"
   if (assessment.status === 'Pending') {
     handleUpdateAssessmentStatus(assessment.id, 'In Progress');
   }
-  
-  // Generate a shareable link (for reference)
-  const assessmentLink = `${window.location.origin}/assessment/${assessment.id}`;
-  console.log('Assessment accessible at:', assessmentLink);
 };
-
   const handleDeleteSurvey = (id) => {
     if (window.confirm('Are you sure you want to delete this survey?')) {
       setSurveys(surveys.filter(survey => survey.id !== id));
@@ -1187,6 +1258,62 @@ const handleCreateAssessment = () => {
   // DASHBOARD PAGE (after login)
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa', display: 'flex' }}>
+      {/* Notification Toast */}
+      {notification?.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          padding: '16px 24px',
+          backgroundColor: notification.type === 'success' ? '#28a745' : '#dc3545',
+          color: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          maxWidth: '400px',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <span style={{ fontSize: '20px' }}>
+            {notification.type === 'success' ? '✓' : '✕'}
+          </span>
+          <span style={{ fontWeight: '500' }}>
+            {notification.message}
+          </span>
+          <button
+            onClick={() => setNotification(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '18px',
+              marginLeft: 'auto',
+              padding: '0',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
       {/* Sidebar Navigation */}
       <div style={{
         width: '250px',
@@ -1235,6 +1362,12 @@ const handleCreateAssessment = () => {
             label="Assessment" 
             active={activeSection === 'assessment'}
             onClick={() => setActiveSection('assessment')}
+          />
+          <SidebarItem 
+            icon="📋" 
+            label="Logs" 
+            active={activeSection === 'logs'}
+            onClick={() => setActiveSection('logs')}
           />
           <SidebarItem 
             icon="⚙️" 
@@ -1292,6 +1425,7 @@ const handleCreateAssessment = () => {
               {activeSection === 'questions' && 'Question Bank'}
               {activeSection === 'users' && 'User Management'}
               {activeSection === 'assessment' && 'Assessment Section'}
+              {activeSection === 'logs' && 'Assessment Logs'}
               {activeSection === 'settings' && 'Settings'}
             </h1>
             <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
@@ -1300,6 +1434,7 @@ const handleCreateAssessment = () => {
               {activeSection === 'questions' && 'Manage questions for each competency'}
               {activeSection === 'users' && 'Select users for surveys'}
               {activeSection === 'assessment' && 'Conduct and view assessments'}
+              {activeSection === 'logs' && 'View all assessment submissions and responses'}
               {activeSection === 'settings' && 'Configure system settings'}
             </p>
           </div>
@@ -2637,10 +2772,234 @@ const handleCreateAssessment = () => {
               </button>
             </div>
           )}
+
+          {activeSection === 'logs' && (
+            <div style={{ 
+              backgroundColor: 'white', 
+              padding: '30px', 
+              borderRadius: '10px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#333' }}>Assessment Submission Logs</h2>
+              
+              {assessmentLogs.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 20px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  color: '#666'
+                }}>
+                  <p>No assessment submissions yet</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ 
+                    width: '100%', 
+                    borderCollapse: 'collapse',
+                    backgroundColor: '#fff'
+                  }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #ddd' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Assessment</th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>User</th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Survey</th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Submitted At</th>
+                        <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Questions</th>
+                        <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Answered</th>
+                        <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assessmentLogs.map((log, index) => (
+                        <tr key={log.id} style={{ 
+                          borderBottom: '1px solid #eee',
+                          backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa'
+                        }}>
+                          <td style={{ padding: '12px', color: '#333' }}>{log.assessmentName}</td>
+                          <td style={{ padding: '12px', color: '#333' }}>{log.userName}</td>
+                          <td style={{ padding: '12px', color: '#333' }}>{log.surveyName}</td>
+                          <td style={{ padding: '12px', color: '#666', fontSize: '14px' }}>
+                            {new Date(log.submittedAt).toLocaleString()}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'center', color: '#333' }}>
+                            {log.totalQuestions}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                            {log.answeredQuestions}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
+                            <button 
+                              onClick={() => setSelectedLog(log)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                marginRight: '8px'
+                              }}
+                            >
+                              View
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this log?')) {
+                                  setAssessmentLogs(prev => prev.filter(l => l.id !== log.id));
+                                  setNotification({
+                                    type: 'success',
+                                    message: 'Log deleted successfully!',
+                                    show: true
+                                  });
+                                  setTimeout(() => {
+                                    setNotification(prev => prev ? { ...prev, show: false } : null);
+                                  }, 3000);
+                                }
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              
+              {/* Detailed Log View Modal */}
+              {selectedLog && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10000
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '10px',
+                    padding: '30px',
+                    maxWidth: '800px',
+                    maxHeight: '80vh',
+                    overflowY: 'auto',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                      <h2 style={{ margin: 0, color: '#333' }}>Assessment Responses</h2>
+                      <button 
+                        onClick={() => setSelectedLog(null)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '28px',
+                          cursor: 'pointer',
+                          color: '#666'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '2px solid #eee' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Assessment:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.assessmentName}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>User:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.userName}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Survey:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.surveyName}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Submitted:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{new Date(selectedLog.submittedAt).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Progress:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#28a745', fontWeight: '600' }}>
+                            {selectedLog.answeredQuestions}/{selectedLog.totalQuestions} Answered
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <h3 style={{ color: '#333', marginBottom: '15px' }}>Detailed Responses:</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {Object.entries(selectedLog.responses).map(([questionId, response], index) => {
+                        const question = questions.find(q => q.id === parseInt(questionId));
+                        return (
+                          <div key={questionId} style={{
+                            padding: '15px',
+                            backgroundColor: '#f8f9fa',
+                            borderRadius: '8px',
+                            border: '1px solid #eee'
+                          }}>
+                            <div style={{ marginBottom: '10px' }}>
+                              <strong style={{ color: '#333' }}>Q{index + 1}: {question?.text}</strong>
+                              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '13px' }}>
+                                Type: {question?.type} | Competency: {question?.competencyName}
+                              </p>
+                            </div>
+                            <div style={{
+                              padding: '12px',
+                              backgroundColor: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #ddd',
+                              color: response ? '#333' : '#999',
+                              fontStyle: response ? 'normal' : 'italic'
+                            }}>
+                              {response || '(No response)'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <button 
+                      onClick={() => setSelectedLog(null)}
+                      style={{
+                        marginTop: '20px',
+                        padding: '12px 30px',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>
   );
 }
 
-export default App;
+export default App;      
