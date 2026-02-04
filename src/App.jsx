@@ -2555,7 +2555,9 @@ const handleCreateAssessment = () => {
             fontWeight: '600'
           }}>
             {assessment.status}
+
           </span>
+          {assessment.status !== 'Completed' && (
           <button 
   onClick={() => handleViewAssessment(assessment)}
   style={{
@@ -2571,8 +2573,9 @@ const handleCreateAssessment = () => {
   }}
 >
   Take Assessment
-</button>
-
+</button>)}
+         
+         {assessment.status !== 'Completed' && (
           <select 
             value={assessment.status}
             onChange={(e) => setAssessments(assessments.map(a => a.id === assessment.id ? {...a, status: e.target.value} : a))}
@@ -2581,9 +2584,9 @@ const handleCreateAssessment = () => {
             <option value="Pending">Pending</option>
             <option value="In Progress">In Progress</option>
             <option value="Completed">Completed</option>
-          </select>
+          </select>)}
         </div>
-        {assessment.status === 'Completed' && (
+        {assessment.status === 'Completed'  &&  (
           <div style={{ marginTop: '10px', textAlign: 'center' }}>
             <button 
               onClick={() => handleUpdateAssessmentStatus(assessment.id, 'Completed')}
