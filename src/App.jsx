@@ -332,8 +332,10 @@ function App() {
     requireApproval: false
   });
 
-  // API Base URL
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // API Base URL - Use environment variable or fallback to local
+  const API_BASE_URL = import.meta.env.VITE_API_URL 
+    ? `${import.meta.env.VITE_API_URL}/api` 
+    : 'http://localhost:5000/api';
 
   // Check if user is already logged in
   useEffect(() => {

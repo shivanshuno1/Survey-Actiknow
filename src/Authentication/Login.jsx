@@ -17,7 +17,7 @@ function Login() {
       console.log('Attempting login:', email);
       
       // ✅ CALL YOUR BACKEND API
-      const response = await fetch('http://localhost:5000/api/auth/LOGIN', {
+      const response = await fetch('https://survey-actiknow-3.onrender.com/api/auth/LOGIN', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
