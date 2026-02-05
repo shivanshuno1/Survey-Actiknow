@@ -2699,7 +2699,59 @@ function App() {
             }}>
               <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#333' }}>Assessment Submission Logs</h2>
               
-              {/* Tab selection for different views */}
+                {(() => {
+                const isAdmin = userData.role === 'Admin' || userData.role === 'admin';
+                const userLogsCount = assessmentLogs.filter(log => 
+                  log.userId === userData._id || log.userId === userData.id
+                ).length;
+                
+                const logsToCheck = isAdmin ? assessmentLogs.length : userLogsCount;
+                
+                return logsToCheck > 0 && (
+                <div style={{ marginBottom: '20px', textAlign: 'right' }}>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${isAdmin ? 'ALL logs' : 'your logs'}? This action cannot be undone.`)) {
+                        let updatedLogs;
+                        if (isAdmin) {
+                          updatedLogs = [];
+                        } else {
+                          // Regular users only delete their own logs
+                          updatedLogs = assessmentLogs.filter(log => 
+                            log.userId !== userData._id && log.userId !== userData.id
+                          );
+                        }
+                        setAssessmentLogs(updatedLogs);
+                        localStorage.setItem('assessmentLogs', JSON.stringify(updatedLogs));
+                        
+                        setNotification({
+                          type: 'success',
+                          message: `${isAdmin ? 'All logs' : 'Your logs'} deleted successfully!`,
+                          show: true
+                        });
+                        setTimeout(() => {
+                          setNotification(prev => prev ? { ...prev, show: false } : null);
+                        }, 3000);
+                      }
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    🗑️ Delete All Logs
+                  </button>
+                </div>
+                );
+              })()}
+
+              
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ 
                   display: 'flex', 
@@ -2845,6 +2897,38 @@ function App() {
                               >
                                 View
                               </button>
+
+                              <button 
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this log?')) {
+                                  const updatedLogs = assessmentLogs.filter(l => l.id !== log.id);
+                                  setAssessmentLogs(updatedLogs);
+                                  localStorage.setItem('assessmentLogs', JSON.stringify(updatedLogs));
+                                  
+                                  setNotification({
+                                    type: 'success',
+                                    message: 'Log deleted successfully!',
+                                    show: true
+                                  });
+                                  setTimeout(() => {
+                                    setNotification(prev => prev ? { ...prev, show: false } : null);
+                                  }, 3000);
+                                }
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              Delete
+                            </button>
+                              
+         
                             </td>
                           </tr>
                         ))}
