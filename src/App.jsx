@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import AssessmentQuestionsPage from './Assessment/AssessmentQuestionsPage.jsx';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Sidebar Item Component
@@ -45,18 +44,16 @@ function App() {
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
   const [apiToken, setApiToken] = useState('');
-  // Add these states near your other state declarations
- const [viewingAssessment, setViewingAssessment] = useState(null);
- const [assessmentQuestions, setAssessmentQuestions] = useState([]);
- const [assessmentResponses, setAssessmentResponses] = useState({});
+
   // Dashboard State
- const [activeSection, setActiveSection] = useState('surveys');
- 
- // Notification State
- const [notification, setNotification] = useState(null);
- 
- // Selected Log State
- const [selectedLog, setSelectedLog] = useState(null);
+  const [activeSection, setActiveSection] = useState('surveys');
+  const [logViewMode, setLogViewMode] = useState('all'); // 'all', 'my', 'assigned'
+  
+  // Notification State
+  const [notification, setNotification] = useState(null);
+  
+  // Selected Log State
+  const [selectedLog, setSelectedLog] = useState(null);
   
   // Surveys
   const [surveys, setSurveys] = useState([
@@ -314,14 +311,86 @@ function App() {
 
   // Assessments
   const [assessments, setAssessments] = useState([
-    { id: 1, name: 'Q1 Performance Review', userId: 1, userName: 'John Doe', status: 'Completed', surveyId: 1 },
-    { id: 2, name: 'Leadership Assessment', userId: 2, userName: 'Jane Smith', status: 'In Progress', surveyId: 1 },
-    { id: 3, name: 'Technical Evaluation', userId: 3, userName: 'Bob Johnson', status: 'Pending', surveyId: 2 }
+    { 
+      id: 1, 
+      name: 'Q1 Performance Review', 
+      userId: 1, 
+      userName: 'John Doe', 
+      status: 'Completed', 
+      surveyId: 1,
+      assignedBy: 'admin1',
+      assignedByName: 'Admin User',
+      assignedAt: '2024-01-15T10:30:00Z'
+    },
+    { 
+      id: 2, 
+      name: 'Leadership Assessment', 
+      userId: 2, 
+      userName: 'Jane Smith', 
+      status: 'In Progress', 
+      surveyId: 1,
+      assignedBy: 'admin1',
+      assignedByName: 'Admin User',
+      assignedAt: '2024-01-20T14:45:00Z'
+    },
+    { 
+      id: 3, 
+      name: 'Technical Evaluation', 
+      userId: 3, 
+      userName: 'Bob Johnson', 
+      status: 'Pending', 
+      surveyId: 2,
+      assignedBy: 'admin2',
+      assignedByName: 'Supervisor',
+      assignedAt: '2024-01-25T09:15:00Z'
+    }
   ]);
   const [newAssessment, setNewAssessment] = useState({ surveyId: '', userId: '' });
 
   // Assessment Logs
-  const [assessmentLogs, setAssessmentLogs] = useState([]);
+  const [assessmentLogs, setAssessmentLogs] = useState([
+    {
+      id: 1,
+      assessmentId: 1,
+      assessmentName: 'Q1 Performance Review',
+      userName: 'John Doe',
+      userId: 1,
+      surveyId: 1,
+      surveyName: 'Leadership Assessment',
+      submittedAt: '2024-01-20T15:30:00Z',
+      responses: {
+        1: '4',
+        2: '5',
+        3: 'Option A',
+        4: 'Excellent communication demonstrated in the quarterly report.'
+      },
+      totalQuestions: 4,
+      answeredQuestions: 4,
+      assignedBy: 'admin1',
+      assignedByName: 'Admin User'
+    },
+    {
+      id: 2,
+      assessmentId: 2,
+      assessmentName: 'Technical Evaluation',
+      userName: 'Bob Johnson',
+      userId: 3,
+      surveyId: 2,
+      surveyName: 'Technical Skills Review',
+      submittedAt: '2024-01-26T11:20:00Z',
+      responses: {
+        5: '5',
+        6: 'Yes',
+        7: '4',
+        8: 'Option B',
+        9: 'Extensive experience with Jest and React Testing Library.'
+      },
+      totalQuestions: 5,
+      answeredQuestions: 5,
+      assignedBy: 'admin2',
+      assignedByName: 'Supervisor'
+    }
+  ]);
 
   // Settings
   const [settings, setSettings] = useState({
@@ -425,7 +494,10 @@ function App() {
           submittedAt: new Date().toISOString(),
           responses: responses,
           totalQuestions: Object.keys(responses).length,
-          answeredQuestions: Object.values(responses).filter(r => r !== '' && r !== null && r !== undefined).length
+          answeredQuestions: Object.values(responses).filter(r => r !== '' && r !== null && r !== undefined).length,
+          // Store who assigned this assessment
+          assignedBy: completedAssessment.assignedBy,
+          assignedByName: completedAssessment.assignedByName
         };
         
         console.log('Creating log entry:', logEntry);
@@ -493,7 +565,9 @@ function App() {
         setAvailableUsers([
           { _id: '1', name: 'John Doe', email: 'john@example.com', department: 'Engineering' },
           { _id: '2', name: 'Jane Smith', email: 'jane@example.com', department: 'Marketing' },
-          { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' }
+          { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' },
+          { _id: '4', name: 'Alice Brown', email: 'alice@example.com', department: 'HR' },
+          { _id: '5', name: 'Charlie Wilson', email: 'charlie@example.com', department: 'Finance' }
         ]);
       }
     } catch (err) {
@@ -503,7 +577,9 @@ function App() {
       setAvailableUsers([
         { _id: '1', name: 'John Doe', email: 'john@example.com', department: 'Engineering' },
         { _id: '2', name: 'Jane Smith', email: 'jane@example.com', department: 'Marketing' },
-        { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' }
+        { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales' },
+        { _id: '4', name: 'Alice Brown', email: 'alice@example.com', department: 'HR' },
+        { _id: '5', name: 'Charlie Wilson', email: 'charlie@example.com', department: 'Finance' }
       ]);
     } finally {
       setLoadingUsers(false);
@@ -677,81 +753,82 @@ function App() {
   };
 
   // Function to handle viewing assessment details
-const handleViewAssessment = (assessment) => {
-  console.log('Opening assessment:', assessment.id);
-  
-  // Check authorization - only allow if user is assigned OR user is admin
-  const isAssignedUser = assessment.userId === userData._id || assessment.userId === userData.id;
-  const isAdmin = userData.role === 'Admin' || userData.role === 'admin';
-  
-  if (!isAssignedUser && !isAdmin) {
-    setNotification({
-      type: 'error',
-      message: 'You are not authorized to access this assessment!',
-      show: true
-    });
-    setTimeout(() => {
-      setNotification(prev => prev ? { ...prev, show: false } : null);
-    }, 4000);
-    return;
-  }
-  
-  // Find the survey for this assessment
-  const survey = surveys.find(s => s.id === assessment.surveyId);
-  
-  if (!survey) {
-    alert('Survey not found for this assessment');
-    return;
-  }
-  
-  // Get all competencies for this survey
-  const surveyCompetencies = competencies.filter(comp => 
-    survey.competencies.includes(comp.id)
-  );
-  
-  if (surveyCompetencies.length === 0) {
-    alert('No competencies found for this survey');
-    return;
-  }
-  
-  // Get all questions for these competencies
-  const questionsForAssessment = [];
-  surveyCompetencies.forEach(comp => {
-    const compQuestions = questions.filter(q => q.competencyId === comp.id);
-    questionsForAssessment.push(...compQuestions);
-  });
-  
-  if (questionsForAssessment.length === 0) {
-    alert('No questions found for this assessment');
-    return;
-  }
-  
-  console.log(`Found ${questionsForAssessment.length} questions for assessment`);
-  
-  // Initialize responses object
-  const initialResponses = {};
-  questionsForAssessment.forEach(q => {
-    initialResponses[q.id] = '';
-  });
-  
-  // Navigate to assessment page with state
-  navigate(`/assessment/${assessment.id}`, {
-    state: {
-      assessment: assessment,
-      survey: survey,
-      competencies: surveyCompetencies,
-      questions: questionsForAssessment,
-      responses: initialResponses,
-      userName: assessment.userName,
-      currentUser: userData
+  const handleViewAssessment = (assessment) => {
+    console.log('Opening assessment:', assessment.id);
+    
+    // Check authorization - only allow if user is assigned OR user is admin
+    const isAssignedUser = assessment.userId === userData._id || assessment.userId === userData.id;
+    const isAdmin = userData.role === 'Admin' || userData.role === 'admin';
+    
+    if (!isAssignedUser && !isAdmin) {
+      setNotification({
+        type: 'error',
+        message: 'You are not authorized to access this assessment!',
+        show: true
+      });
+      setTimeout(() => {
+        setNotification(prev => prev ? { ...prev, show: false } : null);
+      }, 4000);
+      return;
     }
-  });
-  
-  // Update assessment status to "In Progress"
-  if (assessment.status === 'Pending') {
-    handleUpdateAssessmentStatus(assessment.id, 'In Progress');
-  }
-};
+    
+    // Find the survey for this assessment
+    const survey = surveys.find(s => s.id === assessment.surveyId);
+    
+    if (!survey) {
+      alert('Survey not found for this assessment');
+      return;
+    }
+    
+    // Get all competencies for this survey
+    const surveyCompetencies = competencies.filter(comp => 
+      survey.competencies.includes(comp.id)
+    );
+    
+    if (surveyCompetencies.length === 0) {
+      alert('No competencies found for this survey');
+      return;
+    }
+    
+    // Get all questions for these competencies
+    const questionsForAssessment = [];
+    surveyCompetencies.forEach(comp => {
+      const compQuestions = questions.filter(q => q.competencyId === comp.id);
+      questionsForAssessment.push(...compQuestions);
+    });
+    
+    if (questionsForAssessment.length === 0) {
+      alert('No questions found for this assessment');
+      return;
+    }
+    
+    console.log(`Found ${questionsForAssessment.length} questions for assessment`);
+    
+    // Initialize responses object
+    const initialResponses = {};
+    questionsForAssessment.forEach(q => {
+      initialResponses[q.id] = '';
+    });
+    
+    // Navigate to assessment page with state
+    navigate(`/assessment/${assessment.id}`, {
+      state: {
+        assessment: assessment,
+        survey: survey,
+        competencies: surveyCompetencies,
+        questions: questionsForAssessment,
+        responses: initialResponses,
+        userName: assessment.userName,
+        currentUser: userData
+      }
+    });
+    
+    // Update assessment status to "In Progress"
+    if (assessment.status === 'Pending') {
+      handleUpdateAssessmentStatus(assessment.id, 'In Progress');
+    }
+  };
+
   const handleDeleteSurvey = (id) => {
     if (window.confirm('Are you sure you want to delete this survey?')) {
       setSurveys(surveys.filter(survey => survey.id !== id));
@@ -793,31 +870,31 @@ const handleViewAssessment = (assessment) => {
   };
 
   const handleUpdateAssessmentStatus = (assessmentId, newStatus) => {
-  console.log('Updating assessment:', assessmentId, 'to status:', newStatus);
-  
-  if (newStatus === 'Completed') {
-    // Use functional update to ensure we have the latest state
-    setAssessments(prevAssessments => {
-      const updated = prevAssessments.filter(assessment => assessment.id !== assessmentId);
-      console.log(`Removed assessment ${assessmentId}. Before: ${prevAssessments.length}, After: ${updated.length}`);
-      return updated;
-    });
+    console.log('Updating assessment:', assessmentId, 'to status:', newStatus);
     
-    // Optional: Show a temporary message
-    setTimeout(() => {
-      alert('Assessment completed and removed!');
-    }, 100);
-  } else {
-    // Use functional update for status changes too
-    setAssessments(prevAssessments => 
-      prevAssessments.map(assessment => 
-        assessment.id === assessmentId 
-          ? { ...assessment, status: newStatus }
-          : assessment
-      )
-    );
-  }
-};
+    if (newStatus === 'Completed') {
+      // Use functional update to ensure we have the latest state
+      setAssessments(prevAssessments => {
+        const updated = prevAssessments.filter(assessment => assessment.id !== assessmentId);
+        console.log(`Removed assessment ${assessmentId}. Before: ${prevAssessments.length}, After: ${updated.length}`);
+        return updated;
+      });
+      
+      // Optional: Show a temporary message
+      setTimeout(() => {
+        alert('Assessment completed and removed!');
+      }, 100);
+    } else {
+      // Use functional update for status changes too
+      setAssessments(prevAssessments => 
+        prevAssessments.map(assessment => 
+          assessment.id === assessmentId 
+            ? { ...assessment, status: newStatus }
+            : assessment
+        )
+      );
+    }
+  };
 
   // Question Functions
   const handleCreateQuestion = () => {
@@ -853,7 +930,8 @@ const handleViewAssessment = (assessment) => {
     setNewQuestion({ text: '', type: 'Multiple Choice', competencyId: '' });
     alert('Question added successfully!');
   };
-const handleDeleteQuestion = (id) => {
+
+  const handleDeleteQuestion = (id) => {
     if (window.confirm('Are you sure you want to delete this question?')) {
       const questionToDelete = questions.find(q => q.id === id);
       setQuestions(questions.filter(q => q.id !== id));
@@ -877,119 +955,125 @@ const handleDeleteQuestion = (id) => {
     );
   };
 
-  // FIXED: handleAssignUsersToSurvey function
-  // FIXED: handleAssignUsersToSurvey function
-// FIXED: handleAssignUsersToSurvey function
-const handleAssignUsersToSurvey = () => {
-  if (!selectedSurveyForAssignment) {
-    alert('Please select a survey first');
-    return;
-  }
-
-  if (selectedUserIds.length === 0) {
-    alert('Please select at least one user');
-    return;
-  }
-
-  // Update survey's assigned users
-  setSurveys(surveys.map(survey => 
-    survey.id === parseInt(selectedSurveyForAssignment)
-      ? { ...survey, assignedTo: [...new Set([...survey.assignedTo, ...selectedUserIds])] }
-      : survey
-  ));
-
-  // Create assessments for ALL assigned users
-  const survey = surveys.find(s => s.id === parseInt(selectedSurveyForAssignment));
-  const newAssessments = [];
-
-  // Get the highest current assessment ID
-  const maxAssessmentId = assessments.length > 0 
-    ? Math.max(...assessments.map(a => a.id))
-    : 0;
-
-  selectedUserIds.forEach((userId, index) => {
-    const user = availableUsers.find(u => u._id === userId);
-    const existingAssessment = assessments.find(a => 
-      a.userId === userId && a.surveyId === parseInt(selectedSurveyForAssignment)
-    );
-
-    if (!existingAssessment && user) {
-      // Generate unique ID - starting from maxAssessmentId + 1
-      const newAssessmentId = maxAssessmentId + index + 1;
-
-      const newAssessmentObj = {
-        id: newAssessmentId,
-        name: `${survey.name} - ${user.name}`,
-        userId: userId,
-        userName: user.name,
-        status: 'Pending',
-        surveyId: survey.id
-      };
-      newAssessments.push(newAssessmentObj);
+  // Handle assigning users to survey (with assigner tracking)
+  const handleAssignUsersToSurvey = () => {
+    if (!selectedSurveyForAssignment) {
+      alert('Please select a survey first');
+      return;
     }
-  });
 
-  // Add all new assessments at once
-  if (newAssessments.length > 0) {
-    setAssessments(prevAssessments => [...prevAssessments, ...newAssessments]);
-  }
+    if (selectedUserIds.length === 0) {
+      alert('Please select at least one user');
+      return;
+    }
 
-  setSelectedUserIds([]);
-  alert(`Users assigned successfully! ${newAssessments.length} new assessment(s) created.`);
-};
-  // Assessment Functions
- // FIXED: handleCreateAssessment function
-const handleCreateAssessment = () => {
-  if (!newAssessment.surveyId || !newAssessment.userId) {
-    alert('Please select both survey and user');
-    return;
-  }
+    // Update survey's assigned users
+    setSurveys(surveys.map(survey => 
+      survey.id === parseInt(selectedSurveyForAssignment)
+        ? { ...survey, assignedTo: [...new Set([...survey.assignedTo, ...selectedUserIds])] }
+        : survey
+    ));
 
-  const survey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
-  const user = availableUsers.find(u => u._id === newAssessment.userId);
+    // Create assessments for ALL assigned users
+    const survey = surveys.find(s => s.id === parseInt(selectedSurveyForAssignment));
+    const newAssessments = [];
 
-  if (!survey || !user) {
-    alert('Invalid survey or user selection');
-    return;
-  }
+    // Get the highest current assessment ID
+    const maxAssessmentId = assessments.length > 0 
+      ? Math.max(...assessments.map(a => a.id))
+      : 0;
 
-  // Check if assessment already exists for this user and survey
-  const existingAssessment = assessments.find(a => 
-    a.userId === user._id && a.surveyId === survey.id
-  );
+    selectedUserIds.forEach((userId, index) => {
+      const user = availableUsers.find(u => u._id === userId);
+      const existingAssessment = assessments.find(a => 
+        a.userId === userId && a.surveyId === parseInt(selectedSurveyForAssignment)
+      );
 
-  if (existingAssessment) {
-    alert(`Assessment already exists for ${user.name} on ${survey.name}`);
-    return;
-  }
+      if (!existingAssessment && user) {
+        // Generate unique ID - starting from maxAssessmentId + 1
+        const newAssessmentId = maxAssessmentId + index + 1;
 
-  // Generate unique ID
-  const maxAssessmentId = assessments.length > 0 
-    ? Math.max(...assessments.map(a => a.id))
-    : 0;
-  const newAssessmentId = maxAssessmentId + 1;
+        const newAssessmentObj = {
+          id: newAssessmentId,
+          name: `${survey.name} - ${user.name}`,
+          userId: userId,
+          userName: user.name,
+          status: 'Pending',
+          surveyId: survey.id,
+          // Store who assigned this assessment
+          assignedBy: userData._id || userData.id,
+          assignedByName: userData.name,
+          assignedAt: new Date().toISOString()
+        };
+        newAssessments.push(newAssessmentObj);
+      }
+    });
 
-  const newAssessmentObj = {
-    id: newAssessmentId,
-    name: `${survey.name} - ${user.name}`,
-    userId: user._id,
-    userName: user.name,
-    status: 'Pending',
-    surveyId: survey.id
+    // Add all new assessments at once
+    if (newAssessments.length > 0) {
+      setAssessments(prevAssessments => [...prevAssessments, ...newAssessments]);
+    }
+
+    setSelectedUserIds([]);
+    alert(`Users assigned successfully! ${newAssessments.length} new assessment(s) created.`);
   };
 
-  setAssessments(prev => [...prev, newAssessmentObj]);
-  setNewAssessment({ surveyId: '', userId: '' });
-  
-  // Update survey's assigned users
-  setSurveys(prevSurveys => prevSurveys.map(s => 
-    s.id === survey.id 
-      ? { ...s, assignedTo: [...new Set([...s.assignedTo, user._id])] }
-      : s
-  ));
+  // Create assessment (with assigner tracking)
+  const handleCreateAssessment = () => {
+    if (!newAssessment.surveyId || !newAssessment.userId) {
+      alert('Please select both survey and user');
+      return;
+    }
 
-  alert('Assessment created successfully!');
-};
+    const survey = surveys.find(s => s.id === parseInt(newAssessment.surveyId));
+    const user = availableUsers.find(u => u._id === newAssessment.userId);
+
+    if (!survey || !user) {
+      alert('Invalid survey or user selection');
+      return;
+    }
+
+    // Check if assessment already exists for this user and survey
+    const existingAssessment = assessments.find(a => 
+      a.userId === user._id && a.surveyId === survey.id
+    );
+
+    if (existingAssessment) {
+      alert(`Assessment already exists for ${user.name} on ${survey.name}`);
+      return;
+    }
+
+    // Generate unique ID
+    const maxAssessmentId = assessments.length > 0 
+      ? Math.max(...assessments.map(a => a.id))
+      : 0;
+    const newAssessmentId = maxAssessmentId + 1;
+
+    const newAssessmentObj = {
+      id: newAssessmentId,
+      name: `${survey.name} - ${user.name}`,
+      userId: user._id,
+      userName: user.name,
+      status: 'Pending',
+      surveyId: survey.id,
+      // Store who assigned this assessment
+      assignedBy: userData._id || userData.id,
+      assignedByName: userData.name,
+      assignedAt: new Date().toISOString()
+    };
+
+    setAssessments(prev => [...prev, newAssessmentObj]);
+    setNewAssessment({ surveyId: '', userId: '' });
+    
+    // Update survey's assigned users
+    setSurveys(prevSurveys => prevSurveys.map(s => 
+      s.id === survey.id 
+        ? { ...s, assignedTo: [...new Set([...s.assignedTo, user._id])] }
+        : s
+    ));
+
+    alert('Assessment created successfully!');
+  };
 
   // Settings Functions
   const handleSaveSettings = () => {
@@ -1928,116 +2012,6 @@ const handleCreateAssessment = () => {
                   </tbody>
                 </table>
               </div>
-
-              {/* Show competencies with their questions in detail */}
-              <div style={{ 
-                marginTop: '30px',
-                backgroundColor: 'white',
-                padding: '20px',
-                borderRadius: '10px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-              }}>
-                <h3 style={{ marginTop: 0, color: '#333', marginBottom: '20px' }}>
-                  Competency Questions Overview
-                </h3>
-                
-                {competencies.map(comp => {
-                  const competencyQuestions = questions.filter(q => q.competencyId === comp.id);
-                  
-                  return competencyQuestions.length > 0 ? (
-                    <div key={comp.id} style={{ marginBottom: '25px', paddingBottom: '20px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                        <div>
-                          <h4 style={{ margin: 0, color: '#333' }}>{comp.name}</h4>
-                          <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
-                            {comp.description || 'No description provided'}
-                          </div>
-                        </div>
-                        <span style={{
-                          padding: '5px 15px',
-                          backgroundColor: 
-                            comp.category === 'Technical' ? '#e3f2fd' : 
-                            comp.category === 'Behavioral' ? '#f3e5f5' : 
-                            comp.category === 'Leadership' ? '#e8f5e8' :
-                            comp.category === 'Analytical' ? '#fff3cd' : '#f8d7da',
-                          color: 
-                            comp.category === 'Analytical' ? '#856404' : 
-                            comp.category === 'Interpersonal' ? '#721c24' : 'inherit',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          {comp.category} • {competencyQuestions.length} questions
-                        </span>
-                      </div>
-                      
-                      <div style={{ 
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '8px',
-                        padding: '15px'
-                      }}>
-                        {competencyQuestions.map((q, index) => (
-                          <div key={q.id} style={{ 
-                            padding: '10px',
-                            backgroundColor: 'white',
-                            borderRadius: '6px',
-                            marginBottom: '10px',
-                            borderLeft: '4px solid #007bff'
-                          }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: '500', marginBottom: '5px' }}>
-                                  Q{index + 1}: {q.text}
-                                </div>
-                                <div style={{ 
-                                  display: 'flex', 
-                                  alignItems: 'center',
-                                  gap: '10px',
-                                  fontSize: '12px',
-                                  color: '#666'
-                                }}>
-                                  <span style={{ 
-                                    padding: '2px 8px',
-                                    backgroundColor: '#e9ecef',
-                                    borderRadius: '10px'
-                                  }}>
-                                    {q.type}
-                                  </span>
-                                  <span>Question ID: {q.id}</span>
-                                </div>
-                              </div>
-                              <div>
-                                <button 
-                                  onClick={() => handleDeleteQuestion(q.id)}
-                                  style={{
-                                    padding: '5px 10px',
-                                    backgroundColor: '#dc3545',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '12px'
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null;
-                })}
-                
-                {/* If no questions exist yet */}
-                {questions.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                    <p>No questions have been added to any competencies yet.</p>
-                    <p>Click "Add Question" on a competency to get started.</p>
-                  </div>
-                )}
-              </div>
             </div>
           )}
 
@@ -2512,104 +2486,77 @@ const handleCreateAssessment = () => {
                   {userData.role === 'Admin' || userData.role === 'admin' ? 'All Assessments' : 'Your Assessments'}
                 </h3>
                 
-{(() => {
-  // Filter assessments based on user role
-  let displayedAssessments = assessments;
-  
-  if (userData.role !== 'Admin' && userData.role !== 'admin') {
-    // Regular users only see their own assessments
-    displayedAssessments = assessments.filter(a => a.userId === userData._id || a.userId === userData.id);
-  }
-  // Admins see all assessments
-  
-  return displayedAssessments.length === 0 ? (
-  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-    <p>
-      {userData.role === 'Admin' || userData.role === 'admin' 
-        ? 'No assessments found. Create assessments by assigning users to surveys or using the form below.'
-        : '📭 No assessments assigned to you yet.'}
-    </p>
-    {(userData.role !== 'Admin' && userData.role !== 'admin') && (
-      <p style={{ fontSize: '14px', color: '#999' }}>Wait for your administrator to assign assessments to you.</p>
-    )}
-  </div>
-) : (
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-    {displayedAssessments.map(assessment => (
-      <div key={assessment.id} style={{
-        padding: '20px',
-        border: '1px solid #eee',
-        borderRadius: '8px',
-        backgroundColor: assessment.status === 'Completed' ? '#f8fff8' : 
-                       assessment.status === 'In Progress' ? '#fff8e1' : '#f8f9fa'
-      }}>
-        <h4 style={{ marginTop: 0, marginBottom: '10px' }}>{assessment.name}</h4>
-        <p style={{ margin: '5px 0', fontSize: '14px' }}>User: {assessment.userName}</p>
-        <p style={{ margin: '5px 0', fontSize: '14px' }}>Survey: {surveys.find(s => s.id === assessment.surveyId)?.name}</p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
-          <span style={{
-            padding: '5px 12px',
-            backgroundColor: assessment.status === 'Completed' ? '#28a745' :
-                           assessment.status === 'In Progress' ? '#ffc107' : '#6c757d',
-            color: 'white',
-            borderRadius: '12px',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}>
-            {assessment.status}
-
-          </span>
-          {assessment.status !== 'Completed' && (
-          <button 
-  onClick={() => handleViewAssessment(assessment)}
-  style={{
-    padding: '8px 5px',
-    backgroundColor: '#17a2b8',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    height: '54px',
-    width:'85px'
-  }}
->
-  Take Assessment
-</button>)}
-         
-         {assessment.status !== 'Completed' && (
-          <select 
-            value={assessment.status}
-            onChange={(e) => setAssessments(assessments.map(a => a.id === assessment.id ? {...a, status: e.target.value} : a))}
-            style={{ padding: '5px 10px', borderRadius: '4px', border: '1px solid #ddd' }}
-          >
-            <option value="Pending">Pending</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>)}
-        </div>
-        {assessment.status === 'Completed'  &&  (
-          <div style={{ marginTop: '10px', textAlign: 'center' }}>
-            <button 
-              onClick={() => handleUpdateAssessmentStatus(assessment.id, 'Completed')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer'
-              }}
-            >
-              Mark as Completed
-            </button>
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
-);
-})()}
+                {(() => {
+                  // Filter assessments based on user role
+                  let displayedAssessments = assessments;
+                  
+                  if (userData.role !== 'Admin' && userData.role !== 'admin') {
+                    // Regular users only see their own assessments
+                    displayedAssessments = assessments.filter(a => a.userId === userData._id || a.userId === userData.id);
+                  }
+                  // Admins see all assessments
+                  
+                  return displayedAssessments.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                      <p>
+                        {userData.role === 'Admin' || userData.role === 'admin' 
+                          ? 'No assessments found. Create assessments by assigning users to surveys or using the form below.'
+                          : '📭 No assessments assigned to you yet.'}
+                      </p>
+                      {(userData.role !== 'Admin' && userData.role !== 'admin') && (
+                        <p style={{ fontSize: '14px', color: '#999' }}>Wait for your administrator to assign assessments to you.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                      {displayedAssessments.map(assessment => (
+                        <div key={assessment.id} style={{
+                          padding: '20px',
+                          border: '1px solid #eee',
+                          borderRadius: '8px',
+                          backgroundColor: assessment.status === 'Completed' ? '#f8fff8' : 
+                                       assessment.status === 'In Progress' ? '#fff8e1' : '#f8f9fa'
+                        }}>
+                          <h4 style={{ marginTop: 0, marginBottom: '10px' }}>{assessment.name}</h4>
+                          <p style={{ margin: '5px 0', fontSize: '14px' }}>User: {assessment.userName}</p>
+                          <p style={{ margin: '5px 0', fontSize: '14px' }}>Survey: {surveys.find(s => s.id === assessment.surveyId)?.name}</p>
+                          <p style={{ margin: '5px 0', fontSize: '14px' }}>Assigned by: {assessment.assignedByName}</p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+                            <span style={{
+                              padding: '5px 12px',
+                              backgroundColor: assessment.status === 'Completed' ? '#28a745' :
+                                           assessment.status === 'In Progress' ? '#ffc107' : '#6c757d',
+                              color: 'white',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              {assessment.status}
+                            </span>
+                            {assessment.status !== 'Completed' && (
+                              <button 
+                                onClick={() => handleViewAssessment(assessment)}
+                                style={{
+                                  padding: '8px 5px',
+                                  backgroundColor: '#17a2b8',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  height: '54px',
+                                  width: '85px'
+                                }}
+                              >
+                                Take Assessment
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ 
@@ -2743,6 +2690,302 @@ const handleCreateAssessment = () => {
             </div>
           )}
 
+          {activeSection === 'logs' && (
+            <div style={{ 
+              backgroundColor: 'white', 
+              padding: '30px', 
+              borderRadius: '10px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#333' }}>Assessment Submission Logs</h2>
+              
+              {/* Tab selection for different views */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  borderBottom: '2px solid #eee',
+                  marginBottom: '20px'
+                }}>
+                  <button
+                    onClick={() => setLogViewMode('all')}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: logViewMode === 'all' ? '#007bff' : 'transparent',
+                      color: logViewMode === 'all' ? 'white' : '#666',
+                      border: 'none',
+                      borderBottom: logViewMode === 'all' ? '2px solid #007bff' : 'none',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    All Assessments
+                  </button>
+                  <button
+                    onClick={() => setLogViewMode('my')}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: logViewMode === 'my' ? '#007bff' : 'transparent',
+                      color: logViewMode === 'my' ? 'white' : '#666',
+                      border: 'none',
+                      borderBottom: logViewMode === 'my' ? '2px solid #007bff' : 'none',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    My Submissions
+                  </button>
+                  <button
+                    onClick={() => setLogViewMode('assigned')}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: logViewMode === 'assigned' ? '#007bff' : 'transparent',
+                      color: logViewMode === 'assigned' ? 'white' : '#666',
+                      border: 'none',
+                      borderBottom: logViewMode === 'assigned' ? '2px solid #007bff' : 'none',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {userData.role === 'Admin' || userData.role === 'admin' ? 'Assigned by Me' : 'Assignments I Created'}
+                  </button>
+                </div>
+              </div>
+              
+              {(() => {
+                // Filter logs based on selected view mode
+                let displayedLogs = assessmentLogs;
+                
+                if (logViewMode === 'my') {
+                  // Show only logs where user is the one who took the assessment
+                  displayedLogs = assessmentLogs.filter(log => 
+                    log.userId === (userData._id || userData.id)
+                  );
+                } else if (logViewMode === 'assigned') {
+                  // Show logs where user assigned the assessment to others
+                  displayedLogs = assessmentLogs.filter(log => 
+                    log.assignedBy === (userData._id || userData.id)
+                  );
+                }
+                // 'all' mode shows all logs
+                
+                return displayedLogs.length === 0 ? (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '40px 20px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    color: '#666'
+                  }}>
+                    <p>
+                      {logViewMode === 'my' 
+                        ? '📭 No submissions for your assessments yet'
+                        : logViewMode === 'assigned'
+                          ? '📭 No assessments assigned by you have been completed yet'
+                          : '📭 No assessment submissions yet'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ 
+                      width: '100%', 
+                      borderCollapse: 'collapse',
+                      backgroundColor: '#fff'
+                    }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #ddd' }}>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Assessment</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>User</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Survey</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Submitted At</th>
+                          {logViewMode === 'assigned' && (
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Assigned By</th>
+                          )}
+                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Questions</th>
+                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Answered</th>
+                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedLogs.map((log, index) => (
+                          <tr key={log.id} style={{ 
+                            borderBottom: '1px solid #eee',
+                            backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa'
+                          }}>
+                            <td style={{ padding: '12px', color: '#333' }}>{log.assessmentName}</td>
+                            <td style={{ padding: '12px', color: '#333' }}>{log.userName}</td>
+                            <td style={{ padding: '12px', color: '#333' }}>{log.surveyName}</td>
+                            <td style={{ padding: '12px', color: '#666', fontSize: '14px' }}>
+                              {new Date(log.submittedAt).toLocaleString()}
+                            </td>
+                            {logViewMode === 'assigned' && (
+                              <td style={{ padding: '12px', color: '#28a745', fontWeight: '500' }}>
+                                You
+                              </td>
+                            )}
+                            <td style={{ padding: '12px', textAlign: 'center', color: '#333' }}>
+                              {log.totalQuestions}
+                            </td>
+                            <td style={{ padding: '12px', textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                              {log.answeredQuestions}
+                            </td>
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <button 
+                                onClick={() => setSelectedLog(log)}
+                                style={{
+                                  padding: '6px 12px',
+                                  backgroundColor: '#007bff',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  marginRight: '8px'
+                                }}
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+              
+              {/* Detailed Log View Modal */}
+              {selectedLog && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10000
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '10px',
+                    padding: '30px',
+                    maxWidth: '900px',
+                    width: '90%',
+                    maxHeight: '85vh',
+                    overflowY: 'auto',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                    wordWrap: 'break-word',
+                    overflowWrap: 'break-word'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                      <h2 style={{ margin: 0, color: '#333' }}>Assessment Responses</h2>
+                      <button 
+                        onClick={() => setSelectedLog(null)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '28px',
+                          cursor: 'pointer',
+                          color: '#666'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '2px solid #eee' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Assessment:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.assessmentName}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>User:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.userName}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Survey:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.surveyName}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Submitted:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{new Date(selectedLog.submittedAt).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Assigned By:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#28a745', fontWeight: '600' }}>
+                            {selectedLog.assignedByName}
+                          </p>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#666', fontSize: '14px' }}>Progress:</strong>
+                          <p style={{ margin: '5px 0 0 0', color: '#28a745', fontWeight: '600' }}>
+                            {selectedLog.answeredQuestions}/{selectedLog.totalQuestions} Answered
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <h3 style={{ color: '#333', marginBottom: '15px' }}>Detailed Responses:</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {Object.entries(selectedLog.responses).map(([questionId, response], index) => {
+                        const question = questions.find(q => q.id === parseInt(questionId));
+                        return (
+                          <div key={questionId} style={{
+                            padding: '15px',
+                            backgroundColor: '#f8f9fa',
+                            borderRadius: '8px',
+                            border: '1px solid #eee'
+                          }}>
+                            <div style={{ marginBottom: '10px', wordBreak: 'break-word' }}>
+                              <strong style={{ color: '#333', display: 'block', marginBottom: '5px' }}>Q{index + 1}: {question?.text}</strong>
+                              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '13px', wordBreak: 'break-word' }}>
+                                Type: {question?.type} | Competency: {question?.competencyName}
+                              </p>
+                            </div>
+                            <div style={{
+                              padding: '12px',
+                              backgroundColor: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #ddd',
+                              color: response ? '#333' : '#999',
+                              fontStyle: response ? 'normal' : 'italic',
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              maxHeight: '200px',
+                              overflowY: 'auto'
+                            }}>
+                              {response || '(No response)'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <button 
+                      onClick={() => setSelectedLog(null)}
+                      style={{
+                        marginTop: '20px',
+                        padding: '12px 30px',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeSection === 'settings' && (
             <div style={{ 
               backgroundColor: 'white', 
@@ -2838,321 +3081,10 @@ const handleCreateAssessment = () => {
               </button>
             </div>
           )}
-
-          {activeSection === 'logs' && (
-            <div style={{ 
-              backgroundColor: 'white', 
-              padding: '30px', 
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-              <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#333' }}>Assessment Submission Logs</h2>
-              
-              {(() => {
-                const isAdmin = userData.role === 'Admin' || userData.role === 'admin';
-                const userLogsCount = assessmentLogs.filter(log => 
-                  log.userId === userData._id || log.userId === userData.id
-                ).length;
-                
-                const logsToCheck = isAdmin ? assessmentLogs.length : userLogsCount;
-                
-                return logsToCheck > 0 && (
-                <div style={{ marginBottom: '20px', textAlign: 'right' }}>
-                  <button 
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete ${isAdmin ? 'ALL logs' : 'your logs'}? This action cannot be undone.`)) {
-                        let updatedLogs;
-                        if (isAdmin) {
-                          updatedLogs = [];
-                        } else {
-                          // Regular users only delete their own logs
-                          updatedLogs = assessmentLogs.filter(log => 
-                            log.userId !== userData._id && log.userId !== userData.id
-                          );
-                        }
-                        setAssessmentLogs(updatedLogs);
-                        localStorage.setItem('assessmentLogs', JSON.stringify(updatedLogs));
-                        
-                        setNotification({
-                          type: 'success',
-                          message: `${isAdmin ? 'All logs' : 'Your logs'} deleted successfully!`,
-                          show: true
-                        });
-                        setTimeout(() => {
-                          setNotification(prev => prev ? { ...prev, show: false } : null);
-                        }, 3000);
-                      }
-                    }}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    🗑️ Delete All Logs
-                  </button>
-                </div>
-                );
-              })()}
-              
-              {(() => {
-                // Filter logs based on user role
-                let displayedLogs = assessmentLogs;
-                
-                console.log('Filtering logs. userData:', userData);
-                console.log('assessmentLogs count:', assessmentLogs.length);
-                
-                // Safety check - if userData is not loaded, show all logs (for admin)
-                if (userData && userData.role !== 'Admin' && userData.role !== 'admin') {
-                  // Regular users only see their own logs
-                  console.log('User role:', userData.role, '- applying filter');
-                  displayedLogs = assessmentLogs.filter(log => 
-                    log.userId === userData._id || log.userId === userData.id
-                  );
-                } else {
-                  console.log('Admin user or no userData - showing all logs');
-                }
-                
-                console.log('displayedLogs after filter:', displayedLogs.length);
-                
-                return displayedLogs.length === 0 ? (
-                <div style={{ 
-                  textAlign: 'center', 
-                  padding: '40px 20px',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '8px',
-                  color: '#666'
-                }}>
-                  <p>
-                    {userData.role === 'Admin' || userData.role === 'admin'
-                      ? 'No assessment submissions yet'
-                      : '📭 No submissions for your assessments yet'}
-                  </p>
-                </div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ 
-                    width: '100%', 
-                    borderCollapse: 'collapse',
-                    backgroundColor: '#fff'
-                  }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #ddd' }}>
-                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Assessment</th>
-                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>User</th>
-                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Survey</th>
-                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#333' }}>Submitted At</th>
-                        <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Questions</th>
-                        <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Answered</th>
-                        <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#333' }}>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayedLogs.map((log, index) => (
-                        <tr key={log.id} style={{ 
-                          borderBottom: '1px solid #eee',
-                          backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa'
-                        }}>
-                          <td style={{ padding: '12px', color: '#333' }}>{log.assessmentName}</td>
-                          <td style={{ padding: '12px', color: '#333' }}>{log.userName}</td>
-                          <td style={{ padding: '12px', color: '#333' }}>{log.surveyName}</td>
-                          <td style={{ padding: '12px', color: '#666', fontSize: '14px' }}>
-                            {new Date(log.submittedAt).toLocaleString()}
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center', color: '#333' }}>
-                            {log.totalQuestions}
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
-                            {log.answeredQuestions}
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <button 
-                              onClick={() => setSelectedLog(log)}
-                              style={{
-                                padding: '6px 12px',
-                                backgroundColor: '#007bff',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                marginRight: '8px'
-                              }}
-                            >
-                              View
-                            </button>
-                            <button 
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this log?')) {
-                                  const updatedLogs = assessmentLogs.filter(l => l.id !== log.id);
-                                  setAssessmentLogs(updatedLogs);
-                                  localStorage.setItem('assessmentLogs', JSON.stringify(updatedLogs));
-                                  
-                                  setNotification({
-                                    type: 'success',
-                                    message: 'Log deleted successfully!',
-                                    show: true
-                                  });
-                                  setTimeout(() => {
-                                    setNotification(prev => prev ? { ...prev, show: false } : null);
-                                  }, 3000);
-                                }
-                              }}
-                              style={{
-                                padding: '6px 12px',
-                                backgroundColor: '#dc3545',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px'
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-              })()}
-              
-              {/* Detailed Log View Modal */}
-              {selectedLog && (
-                <div style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 10000
-                }}>
-                  <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '10px',
-                    padding: '30px',
-                    maxWidth: '900px',
-                    width: '90%',
-                    maxHeight: '85vh',
-                    overflowY: 'auto',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-                    wordWrap: 'break-word',
-                    overflowWrap: 'break-word'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                      <h2 style={{ margin: 0, color: '#333' }}>Assessment Responses</h2>
-                      <button 
-                        onClick={() => setSelectedLog(null)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          fontSize: '28px',
-                          cursor: 'pointer',
-                          color: '#666'
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    
-                    <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '2px solid #eee' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                        <div>
-                          <strong style={{ color: '#666', fontSize: '14px' }}>Assessment:</strong>
-                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.assessmentName}</p>
-                        </div>
-                        <div>
-                          <strong style={{ color: '#666', fontSize: '14px' }}>User:</strong>
-                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.userName}</p>
-                        </div>
-                        <div>
-                          <strong style={{ color: '#666', fontSize: '14px' }}>Survey:</strong>
-                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{selectedLog.surveyName}</p>
-                        </div>
-                        <div>
-                          <strong style={{ color: '#666', fontSize: '14px' }}>Submitted:</strong>
-                          <p style={{ margin: '5px 0 0 0', color: '#333' }}>{new Date(selectedLog.submittedAt).toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <strong style={{ color: '#666', fontSize: '14px' }}>Progress:</strong>
-                          <p style={{ margin: '5px 0 0 0', color: '#28a745', fontWeight: '600' }}>
-                            {selectedLog.answeredQuestions}/{selectedLog.totalQuestions} Answered
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <h3 style={{ color: '#333', marginBottom: '15px' }}>Detailed Responses:</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      {Object.entries(selectedLog.responses).map(([questionId, response], index) => {
-                        const question = questions.find(q => q.id === parseInt(questionId));
-                        return (
-                          <div key={questionId} style={{
-                            padding: '15px',
-                            backgroundColor: '#f8f9fa',
-                            borderRadius: '8px',
-                            border: '1px solid #eee'
-                          }}>
-                            <div style={{ marginBottom: '10px', wordBreak: 'break-word' }}>
-                              <strong style={{ color: '#333', display: 'block', marginBottom: '5px' }}>Q{index + 1}: {question?.text}</strong>
-                              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '13px', wordBreak: 'break-word' }}>
-                                Type: {question?.type} | Competency: {question?.competencyName}
-                              </p>
-                            </div>
-                            <div style={{
-                              padding: '12px',
-                              backgroundColor: 'white',
-                              borderRadius: '6px',
-                              border: '1px solid #ddd',
-                              color: response ? '#333' : '#999',
-                              fontStyle: response ? 'normal' : 'italic',
-                              wordBreak: 'break-word',
-                              whiteSpace: 'pre-wrap',
-                              maxHeight: '200px',
-                              overflowY: 'auto'
-                            }}>
-                              {response || '(No response)'}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    <button 
-                      onClick={() => setSelectedLog(null)}
-                      style={{
-                        marginTop: '20px',
-                        padding: '12px 30px',
-                        backgroundColor: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </main>
       </div>
     </div>
   );
 }
 
-export default App;      
+export default App;
