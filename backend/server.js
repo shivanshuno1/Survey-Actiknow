@@ -40,6 +40,8 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+
+
 // Use the exact collection name 'Usernames'
 const User = mongoose.model('User', userSchema, 'users');
 

@@ -537,6 +537,8 @@ function App() {
     }
   }, [location.state?.assessmentCompleted, assessments, surveys]);
 
+  
+
   // Fetch users from database
   const fetchUsersFromDatabase = async () => {
     setLoadingUsers(true);
@@ -604,6 +606,8 @@ function App() {
       });
 
       const data = await response.json();
+
+      
 
       if (data.success) {
         const token = data.token;
@@ -2551,8 +2555,34 @@ function App() {
                                 Take Assessment
                               </button>
                             )}
+
+                            {assessment.status === 'Completed' && (
+                              <div style={{marginTop:'10px',
+                              textAlign:'center'}}>
+                                <button 
+                                  onClick={() => handleUpdateAssessmentStatus(assessment.id,'Completed')}
+                                  style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: 'green',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    height: '54px',
+                                    width: '85px'
+                                  }}
+                                >
+                                  Mark as Completed
+                                </button>
+                              </div>
+                            )}
+                              
                           </div>
+
+                          
                         </div>
+                        
                       ))}
                     </div>
                   );
